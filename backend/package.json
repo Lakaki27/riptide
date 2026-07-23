@@ -12,6 +12,8 @@
         "build": "tsc",
         "start": "node dist/index.js",
         "ingest": "tsx src/cli/ingest.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "lint": "biome lint .",
         "lint:fix": "biome lint --write .",
         "format": "biome format --write .",
@@ -32,12 +34,18 @@
         "typeorm": "^0.3.20"
     },
     "devDependencies": {
+        "@swc/core": "^1.9.3",
+        "unplugin-swc": "^1.5.1",
         "@types/bcryptjs": "^2.4.6",
+        "@biomejs/biome": "2.5.4",
         "@types/express": "^5.0.6",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/multer": "^1.4.12",
         "@types/node": "^26.1.1",
+        "@types/supertest": "^6.0.2",
+        "supertest": "^7.0.0",
         "tsx": "^4.19.2",
-        "typescript": "^7.0.2"
+        "typescript": "^7.0.2",
+        "vitest": "^2.1.8"
     }
 }
