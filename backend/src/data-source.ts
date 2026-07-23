@@ -2,7 +2,10 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { Artist } from "./entities/Artist";
 import { Music } from "./entities/Music";
+import { PlayEvent } from "./entities/PlayEvent";
 import { Playlist } from "./entities/Playlist";
+import { RefreshToken } from "./entities/RefreshToken";
+import { User } from "./entities/User";
 import { requireEnv } from "./env";
 
 export const AppDataSource = new DataSource({
@@ -14,6 +17,6 @@ export const AppDataSource = new DataSource({
 	database: requireEnv("DB_NAME"),
 	synchronize: true,
 	logging: false,
-	entities: [Artist, Music, Playlist],
+	entities: [Music, Playlist, Artist, User, RefreshToken, PlayEvent],
 	migrations: [],
 });

@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import {
 	BeforeInsert,
 	Column,
+	CreateDateColumn,
 	Entity,
 	OneToMany,
 	PrimaryColumn,
@@ -13,7 +14,7 @@ export class Artist {
 	@PrimaryColumn({ type: "varchar", length: 12 })
 	id!: string;
 
-	@Column()
+	@Column({ unique: true })
 	name!: string;
 
 	@OneToMany(
@@ -21,6 +22,9 @@ export class Artist {
 		(music) => music.artist,
 	)
 	musics!: Music[];
+
+	@CreateDateColumn()
+	createdAt!: Date;
 
 	@BeforeInsert()
 	generateId() {

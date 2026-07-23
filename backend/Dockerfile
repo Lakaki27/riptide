@@ -1,5 +1,6 @@
 FROM node:26-alpine
 WORKDIR /app
+RUN apk add --no-cache python3 ffmpeg yt-dlp
 COPY package*.json ./
 RUN npm install
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

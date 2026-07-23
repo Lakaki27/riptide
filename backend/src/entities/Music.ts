@@ -29,11 +29,16 @@ export class Music {
 	@Column()
 	fileKey!: string;
 
+	@Column()
+	thumbnailKey!: string;
+
 	@CreateDateColumn()
 	createdAt!: Date;
 
 	@BeforeInsert()
 	generateId() {
-		this.id = nanoid(12);
+		if (!this.id) {
+			this.id = nanoid(12);
+		}
 	}
 }

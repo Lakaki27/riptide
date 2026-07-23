@@ -12,6 +12,7 @@ services:
             - riptide
         volumes:
             - ./backend:/app
+            - ./consume:/consume
     db:
         image: postgres:18-alpine
         restart: unless-stopped
@@ -30,6 +31,7 @@ services:
         restart: unless-stopped
         depends_on:
             - backend
+            - rustfs
         volumes:
             - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
         ports:
