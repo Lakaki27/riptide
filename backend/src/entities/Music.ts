@@ -14,7 +14,7 @@ export class Music {
 	@PrimaryColumn({ type: "varchar", length: 12 })
 	id!: string;
 
-	@Column()
+	@Column({ type: "varchar" })
 	title!: string;
 
 	@ManyToOne(
@@ -26,10 +26,10 @@ export class Music {
 	@Column({ type: "int" })
 	durationSeconds!: number;
 
-	@Column()
+	@Column({ type: "varchar" })
 	fileKey!: string;
 
-	@Column()
+	@Column({ type: "varchar" })
 	thumbnailKey!: string;
 
 	@CreateDateColumn()

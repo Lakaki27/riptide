@@ -105,4 +105,21 @@ router.post("/:id", async (req, res) => {
 	return res.sendStatus(204);
 });
 
+router.delete("/:id/musics/:musicId", async (req, res) => {
+	const { id, musicId } = req.params;
+
+	const playlist = await playlistRepository.findOne({ where: { id } });
+
+	if (!playlist) {
+		return res.status(404).json({ error: "playlist not found" });
+	}
+
+	await AppDataSource.createQueryBuilder()
+		.relation(Playlist, "musics")
+		.of(id)
+		.remove(musicId);
+
+	res.sendStatus(204);
+});
+
 export { router as playlistRouter };

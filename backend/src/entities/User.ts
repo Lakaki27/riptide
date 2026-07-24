@@ -12,10 +12,10 @@ export class User {
 	@PrimaryColumn({ type: "varchar", length: 12 })
 	id!: string;
 
-	@Column({ unique: true })
+	@Column({ unique: true, type: "varchar" })
 	email!: string;
 
-	@Column()
+	@Column({ type: "varchar" })
 	passwordHash!: string;
 
 	@CreateDateColumn()

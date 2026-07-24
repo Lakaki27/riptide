@@ -15,7 +15,7 @@ export class Playlist {
 	@PrimaryColumn({ type: "varchar", length: 12 })
 	id!: string;
 
-	@Column()
+	@Column({ type: "varchar" })
 	name!: string;
 
 	@ManyToMany(() => Music)

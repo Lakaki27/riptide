@@ -14,7 +14,7 @@ export class RefreshToken {
 	@PrimaryColumn({ type: "varchar", length: 12 })
 	id!: string;
 
-	@Column({ unique: true })
+	@Column({ unique: true, type: "varchar" })
 	tokenHash!: string;
 
 	@ManyToOne(() => User, { onDelete: "CASCADE" })
@@ -23,7 +23,7 @@ export class RefreshToken {
 	@Column({ type: "timestamptz" })
 	expiresAt!: Date;
 
-	@Column({ default: false })
+	@Column({ default: false, type: "boolean" })
 	revoked!: boolean;
 
 	@CreateDateColumn()

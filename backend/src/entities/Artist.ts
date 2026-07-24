@@ -14,7 +14,7 @@ export class Artist {
 	@PrimaryColumn({ type: "varchar", length: 12 })
 	id!: string;
 
-	@Column({ unique: true })
+	@Column({ unique: true, type: "varchar" })
 	name!: string;
 
 	@OneToMany(
