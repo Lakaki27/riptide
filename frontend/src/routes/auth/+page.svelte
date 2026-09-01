@@ -1,30 +1,33 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import { authStore } from "$lib/stores/auth";
+    import { goto } from "$app/navigation";
+    import { authStore } from "$lib/stores/auth";
 
-let email = $state("");
-let password = $state("");
-let error = $state("");
-let loading = $state(false);
+    let email = $state("");
+    let password = $state("");
+    let error = $state("");
+    let loading = $state(false);
 
-async function handleSubmit(e: Event) {
-	e.preventDefault();
-	error = "";
-	loading = true;
+    async function handleSubmit(e: Event) {
+        e.preventDefault();
+        error = "";
+        loading = true;
 
-	try {
-		await authStore.login(email, password);
-		goto("/");
-	} catch {
-		error = "Invalid email or password";
-	} finally {
-		loading = false;
-	}
-}
+        try {
+            await authStore.login(email, password);
+            goto("/");
+        } catch {
+            error = "Invalid email or password";
+        } finally {
+            loading = false;
+        }
+    }
 </script>
 
 <div class="flex h-screen items-center justify-center bg-violet-50">
-    <form onsubmit={handleSubmit} class="flex w-80 flex-col gap-3 rounded-lg bg-white p-6 shadow-sm">
+    <form
+        onsubmit={handleSubmit}
+        class="flex w-80 flex-col gap-3 rounded-lg bg-white p-6 shadow-sm"
+    >
         <h1 class="mb-2 text-xl text-neutral-900">Sign in</h1>
 
         <input

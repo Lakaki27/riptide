@@ -1,11 +1,12 @@
 <script lang="ts">
-import { page } from "$app/state";
+    import { page } from "$app/state";
 
-const links = [
-	{ href: "/", label: "Home" },
-	{ href: "/playlists", label: "Playlists" },
-	{ href: "/statistics", label: "Statistics" },
-];
+    const links = [
+        { href: "/", label: "Home" },
+        { href: "/artists", label: "Artists" },
+        { href: "/playlists", label: "Playlists" },
+        { href: "/statistics", label: "Statistics" },
+    ];
 </script>
 
 <nav class="flex w-48 flex-col gap-1 border-r border-violet-100 bg-white p-4">

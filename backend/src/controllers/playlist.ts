@@ -31,7 +31,7 @@ router.get("/:id", async (req, res) => {
 
 	const playlist = await playlistRepository.findOne({
 		where: { id },
-		relations: ["musics"],
+		relations: ["musics", "musics.artist"],
 	});
 
 	if (!playlist) {

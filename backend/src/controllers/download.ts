@@ -25,6 +25,7 @@ router.get("/:jobId", (req, res) => {
 		return res.status(404).json({ error: "job not found" });
 	}
 
+	res.set("Cache-Control", "no-store");
 	res.json(job);
 });
 

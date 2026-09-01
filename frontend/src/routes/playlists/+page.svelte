@@ -1,31 +1,31 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { apiFetch } from "$lib/api";
-import type { Playlist } from "$lib/types";
+    import { onMount } from "svelte";
+    import { apiFetch } from "$lib/api";
+    import type { Playlist } from "$lib/types";
 
-let playlists = $state<Playlist[]>([]);
-let showCreateModal = $state(false);
-let newPlaylistName = $state("");
+    let playlists = $state<Playlist[]>([]);
+    let showCreateModal = $state(false);
+    let newPlaylistName = $state("");
 
-async function loadPlaylists() {
-	playlists = await apiFetch<Playlist[]>("/playlists");
-}
+    async function loadPlaylists() {
+        playlists = await apiFetch<Playlist[]>("/playlists");
+    }
 
-async function createPlaylist(e: Event) {
-	e.preventDefault();
-	if (!newPlaylistName.trim()) return;
+    async function createPlaylist(e: Event) {
+        e.preventDefault();
+        if (!newPlaylistName.trim()) return;
 
-	await apiFetch("/playlists", {
-		method: "POST",
-		body: JSON.stringify({ name: newPlaylistName }),
-	});
+        await apiFetch("/playlists", {
+            method: "POST",
+            body: JSON.stringify({ name: newPlaylistName }),
+        });
 
-	newPlaylistName = "";
-	showCreateModal = false;
-	await loadPlaylists();
-}
+        newPlaylistName = "";
+        showCreateModal = false;
+        await loadPlaylists();
+    }
 
-onMount(loadPlaylists);
+    onMount(loadPlaylists);
 </script>
 
 <div class="flex flex-col gap-4">
@@ -45,7 +45,9 @@ onMount(loadPlaylists);
                 href="/playlists/{playlist.id}"
                 class="flex flex-col gap-2 rounded-lg bg-white p-4 hover:bg-violet-100"
             >
-                <div class="flex h-24 items-center justify-center rounded-lg bg-violet-100 text-violet-500">
+                <div
+                    class="flex h-24 items-center justify-center rounded-lg bg-violet-100 text-violet-500"
+                >
                     {playlist.name.slice(0, 1).toUpperCase()}
                 </div>
                 <span class="text-sm text-neutral-900">{playlist.name}</span>
