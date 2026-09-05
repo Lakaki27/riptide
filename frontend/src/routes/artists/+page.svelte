@@ -63,18 +63,21 @@
     />
 
     <div class="flex-1 overflow-y-auto" onscroll={onScroll}>
-        <div class="grid grid-cols-4 gap-4">
+        <div
+            class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4"
+        >
             {#each artists as artist}
                 <a
                     href="/artists/{artist.id}"
-                    class="flex flex-col items-center gap-2 rounded-lg bg-white p-4 hover:bg-violet-100"
+                    class="flex flex-col items-center gap-2 rounded-xl bg-white p-3 shadow-sm transition-all hover:bg-violet-100 hover:shadow-md active:scale-95 md:p-4"
                 >
                     <div
-                        class="flex h-20 w-20 items-center justify-center rounded-full bg-violet-100 text-2xl text-violet-500"
+                        class="flex aspect-square w-full items-center justify-center rounded-full bg-violet-100 text-2xl text-violet-500 md:text-3xl"
                     >
                         {artist.name.slice(0, 1).toUpperCase()}
                     </div>
-                    <span class="text-center text-sm text-neutral-900"
+                    <span
+                        class="w-full truncate text-center text-sm text-neutral-900"
                         >{artist.name}</span
                     >
                 </a>

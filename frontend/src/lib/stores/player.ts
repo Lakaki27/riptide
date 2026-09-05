@@ -139,29 +139,30 @@ function createPlayerStore() {
                 if (mode === "randomize") {
                     const currentTrack = s.queue[s.currentIndex];
                     const shuffled = shuffle(s.queue);
-                    const newIndex = currentTrack
+                    const foundIndex = currentTrack
                         ? shuffled.findIndex((t) => t.id === currentTrack.id)
-                        : 0;
+                        : -1;
                     return {
                         ...s,
                         mode,
                         queue: shuffled,
-                        currentIndex: newIndex,
+                        currentIndex: foundIndex === -1 ? 0 : foundIndex,
                     };
                 }
 
                 if (s.mode === "randomize") {
                     const currentTrack = s.queue[s.currentIndex];
-                    const newIndex = currentTrack
+                    const foundIndex = currentTrack
                         ? s.originalQueue.findIndex(
                               (t) => t.id === currentTrack.id,
                           )
-                        : 0;
+                        : -1;
                     return {
                         ...s,
                         mode,
                         queue: s.originalQueue,
-                        currentIndex: newIndex,
+                        currentIndex:
+                            foundIndex === -1 ? s.currentIndex : foundIndex,
                     };
                 }
 

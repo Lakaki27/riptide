@@ -1,6 +1,7 @@
 <script lang="ts">
     import SongMenu from "$lib/components/SongMenu.svelte";
     import type { Music } from "$lib/types";
+    import { goto } from "$app/navigation";
 
     interface Props {
         music: Music;
@@ -10,6 +11,7 @@
         active?: boolean;
         compact?: boolean;
         showMenu?: boolean;
+        onTitleNavigate?: (music: Music) => void;
     }
 
     let {
@@ -20,46 +22,66 @@
         active = false,
         compact = false,
         showMenu = true,
+        onTitleNavigate,
     }: Props = $props();
+
+    function stop(e: Event) {
+        e.stopPropagation();
+    }
+
+    function handleTitleClick(e: Event) {
+        if (onTitleNavigate) {
+            stop(e);
+            onTitleNavigate(music);
+        }
+    }
 </script>
 
 <div
-    class="relative flex items-center gap-3 rounded-lg px-2 py-2 {active
+    onclick={onPlay}
+    onkeydown={(e) => e.key === "Enter" && onPlay()}
+    role="button"
+    tabindex="0"
+    class="flex items-center gap-3 rounded-lg px-2 py-2 {active
         ? 'bg-violet-100'
         : 'hover:bg-violet-100'}"
 >
-    <!-- Clickable area -->
-    <button
-        type="button"
-        onclick={onPlay}
-        aria-label={`Play ${music.title}`}
-        class="absolute inset-0 h-full w-full rounded-lg"
-    ></button>
-
-    <!-- Visual content -->
     <img
         src={music.thumbnailUrl ?? "/placeholder.png"}
         alt=""
-        class="{compact
-            ? 'h-8 w-8'
-            : 'h-10 w-10'} pointer-events-none relative rounded-lg"
+        class="{compact ? 'h-8 w-8' : 'h-10 w-10'} shrink-0 rounded-lg"
     />
 
-    <div class="relative flex min-w-0 flex-1 flex-col">
-        <span class="w-fit truncate text-left text-sm text-neutral-900">
-            {music.title}
-        </span>
+    <div class="flex min-w-0 flex-1 flex-col">
+        {#if onTitleNavigate}
+            <button
+                onclick={handleTitleClick}
+                class="max-w-full self-start truncate text-left text-sm text-neutral-900 hover:underline"
+            >
+                {music.title}
+            </button>
+        {:else}
+            <span class="block w-full truncate text-sm text-neutral-900"
+                >{music.title}</span
+            >
+        {/if}
 
-        <a
-            href="/artists/{music.artist.id}"
-            class="relative z-10 w-fit truncate text-sm text-neutral-500 hover:text-violet-600 hover:underline"
+        <button
+            onclick={(e) => {
+                stop(e);
+                goto(`/artists/${music.artist.id}`);
+            }}
+            class="hidden max-w-full self-start truncate text-left text-sm text-neutral-500 hover:text-violet-600 hover:underline md:inline-block"
         >
             {music.artist.name}
-        </a>
+        </button>
+        <span class="block w-full truncate text-sm text-neutral-500 md:hidden"
+            >{music.artist.name}</span
+        >
     </div>
 
     {#if showMenu}
-        <div class="relative z-10">
+        <div onclick={stop} onkeydown={stop} role="presentation">
             <SongMenu {music} {playlistId} {onRemoved} />
         </div>
     {/if}

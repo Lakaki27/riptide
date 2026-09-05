@@ -1,2 +1,8 @@
 @import "tailwindcss";
 @import "boxicons/css/boxicons.min.css";
+
+button,
+a,
+[role="button"] {
+    cursor: pointer;
+}

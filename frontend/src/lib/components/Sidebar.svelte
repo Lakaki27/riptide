@@ -2,22 +2,30 @@
     import { page } from "$app/state";
 
     const links = [
-        { href: "/", label: "Home" },
-        { href: "/artists", label: "Artists" },
-        { href: "/playlists", label: "Playlists" },
-        { href: "/statistics", label: "Statistics" },
+        { href: "/", label: "Home", icon: "bx-home" },
+        { href: "/artists", label: "Artists", icon: "bx-microphone" },
+        { href: "/playlists", label: "Playlists", icon: "bx-list-ul" },
+        { href: "/statistics", label: "Stats", icon: "bx-bar-chart-alt-2" },
     ];
 </script>
 
-<nav class="flex w-48 flex-col gap-1 border-r border-violet-100 bg-white p-4">
+<nav
+    class="flex shrink-0 border-violet-100 bg-white
+        max-md:flex-row max-md:justify-around max-md:border-t max-md:px-2 max-md:py-2
+        md:w-56 md:flex-col md:gap-1 md:border-r md:p-4"
+>
     {#each links as link}
         <a
             href={link.href}
-            class="rounded px-3 py-2 text-sm {page.url.pathname === link.href
-                ? 'bg-violet-500 text-white'
+            class="flex items-center gap-3 rounded-lg text-sm transition-colors
+                max-md:flex-col max-md:gap-0.5 max-md:px-3 max-md:py-1 max-md:text-xs
+                md:px-3 md:py-2
+                {page.url.pathname === link.href
+                ? 'bg-violet-500 text-white max-md:bg-transparent max-md:text-violet-600'
                 : 'text-neutral-500 hover:bg-violet-100'}"
         >
-            {link.label}
+            <i class="bx {link.icon} text-xl md:text-base"></i>
+            <span>{link.label}</span>
         </a>
     {/each}
 </nav>

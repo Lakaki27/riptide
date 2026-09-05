@@ -11,6 +11,7 @@
         compact?: boolean;
         showMenu?: boolean;
         onPlay?: (index: number) => void;
+        onTitleNavigate?: (music: Music) => void;
     }
 
     let {
@@ -21,6 +22,7 @@
         compact = false,
         showMenu = true,
         onPlay,
+        onTitleNavigate,
     }: Props = $props();
 
     function handlePlay(index: number) {
@@ -42,6 +44,7 @@
             active={i === activeIndex}
             {compact}
             {showMenu}
+            {onTitleNavigate}
         />
     {/each}
 </div>

@@ -68,11 +68,13 @@
 </script>
 
 <div class="flex h-full flex-col gap-4">
-    <div class="flex items-center justify-between gap-4">
+    <div
+        class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+    >
         <h1 class="text-xl text-neutral-900">All songs</h1>
         <button
             onclick={() => (showAddModal = true)}
-            class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600"
+            class="rounded-xl bg-violet-500 px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-violet-600 active:scale-95"
         >
             Add from URL
         </button>
@@ -82,7 +84,7 @@
         bind:value={query}
         oninput={search}
         placeholder="Search songs..."
-        class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
+        class="rounded-xl border border-violet-100 px-3 py-2.5 text-sm shadow-sm"
     />
 
     <div class="flex-1 overflow-y-auto" onscroll={onScroll}>

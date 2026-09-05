@@ -39,18 +39,20 @@
         </button>
     </div>
 
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
         {#each playlists as playlist}
             <a
                 href="/playlists/{playlist.id}"
-                class="flex flex-col gap-2 rounded-lg bg-white p-4 hover:bg-violet-100"
+                class="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm transition-shadow hover:bg-violet-100 hover:shadow-md md:p-4"
             >
                 <div
-                    class="flex h-24 items-center justify-center rounded-lg bg-violet-100 text-violet-500"
+                    class="flex h-20 items-center justify-center rounded-xl bg-violet-100 text-violet-500 md:h-24"
                 >
                     {playlist.name.slice(0, 1).toUpperCase()}
                 </div>
-                <span class="text-sm text-neutral-900">{playlist.name}</span>
+                <span class="truncate text-sm text-neutral-900"
+                    >{playlist.name}</span
+                >
             </a>
         {/each}
     </div>
