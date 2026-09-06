@@ -59,9 +59,29 @@
         class="flex w-96 flex-col gap-3 rounded-xl bg-[var(--color-surface)] p-6"
     >
         <div class="flex items-center justify-between">
-            <h2 class="text-lg text-[var(--color-text-primary)]">
-                Add from URL
-            </h2>
+            <div class="flex items-center gap-2">
+                <h2 class="text-lg text-[var(--color-text-primary)]">
+                    Add from URL
+                </h2>
+                <div class="group relative">
+                    <button
+                        onclick={() =>
+                            window.open(
+                                "/legal",
+                                "_blank",
+                                "noopener,noreferrer",
+                            )}
+                        class="flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
+                    >
+                        <i class="bx bx-info-circle text-base"></i>
+                    </button>
+                    <div
+                        class="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--color-text-primary)] px-2 py-1 text-xs text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100"
+                    >
+                        View legal disclaimer
+                    </div>
+                </div>
+            </div>
             <button onclick={onClose} class="text-[var(--color-text-muted)]"
                 >Close</button
             >

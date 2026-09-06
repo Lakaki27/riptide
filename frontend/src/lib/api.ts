@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
-import { PUBLIC_API_BASE_URL } from "$env/static/public";
 import { authStore } from "./stores/auth";
+import { goto } from "$app/navigation";
 
 interface ApiOptions extends RequestInit {
     skipAuth?: boolean;
@@ -18,7 +18,7 @@ async function rawFetch(path: string, options: ApiOptions): Promise<Response> {
         }
     }
 
-    return fetch(`${PUBLIC_API_BASE_URL}${path}`, {
+    return fetch(`/api${path}`, {
         ...rest,
         cache: "no-store",
         headers: finalHeaders,
@@ -35,6 +35,10 @@ export async function apiFetch<T>(
         const refreshed = await authStore.refresh();
         if (refreshed) {
             response = await rawFetch(path, options);
+        } else {
+            authStore.clear();
+            goto("/auth");
+            throw new Error("session expired");
         }
     }
 
@@ -47,9 +51,6 @@ export async function apiFetch<T>(
         );
     }
 
-    if (response.status === 204) {
-        return undefined as T;
-    }
-
+    if (response.status === 204) return undefined as T;
     return response.json();
 }

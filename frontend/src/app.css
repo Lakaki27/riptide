@@ -16,6 +16,17 @@
     --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+:root[data-theme="dark"] {
+    --color-bg: #17131f;
+    --color-surface: #221d2e;
+    --color-surface-hover: #2d2740;
+    --color-border: #332c47;
+    --color-text-primary: #f3f0fa;
+    --color-text-muted: #a89fc2;
+    --color-accent: oklch(81.1% 0.111 293.571);
+    --color-accent-hover: oklch(81.1% 0.111 293.571);
+}
+
 button,
 a,
 [role="button"] {

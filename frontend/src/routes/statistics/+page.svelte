@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { apiFetch } from "$lib/api";
-    import { m } from "$lib/paraglide/messages";
 
     interface TopSong {
         musicId: string;
@@ -32,6 +31,7 @@
     let earliestDate = $state<string | null>(null);
     let selectedRange = $state<"month" | "year" | "all">("year");
     let selectedYear = $state(new Date().getFullYear());
+    let scope = $state<"me" | "global">("me");
     let loading = $state(true);
     let heatmapLoading = $state(false);
     let scrollContainer: HTMLElement;
@@ -153,7 +153,7 @@
         heatmapLoading = true;
         const { startDate, endDate } = computeRange();
         const data = await apiFetch<HeatmapResponse>(
-            `/stats/heatmap?startDate=${startDate}&endDate=${endDate}`,
+            `/stats/heatmap?startDate=${startDate}&endDate=${endDate}&scope=${scope}`,
         );
         heatmapDays = fillGaps(startDate, endDate, data.results);
         heatmapLoading = false;
@@ -163,6 +163,29 @@
                 scrollContainer.scrollLeft = scrollContainer.scrollWidth;
             }
         });
+    }
+
+    async function loadLeaderboards() {
+        const [songsData, artistsData] = await Promise.all([
+            apiFetch<{ results: TopSong[] }>(
+                `/stats/top-songs?limit=100&scope=${scope}`,
+            ),
+            apiFetch<{ results: TopArtist[] }>(
+                `/stats/top-artists?limit=100&scope=${scope}`,
+            ),
+        ]);
+        topSongs = songsData.results;
+        topArtists = artistsData.results;
+    }
+
+    async function reload() {
+        await Promise.all([loadLeaderboards(), loadHeatmap()]);
+    }
+
+    function setScope(next: "me" | "global") {
+        if (scope === next) return;
+        scope = next;
+        reload();
     }
 
     function showTooltip(
@@ -183,29 +206,46 @@
     }
 
     onMount(async () => {
-        const [songsData, artistsData, earliestData] = await Promise.all([
-            apiFetch<{ results: TopSong[] }>("/stats/top-songs?limit=100"),
-            apiFetch<{ results: TopArtist[] }>("/stats/top-artists?limit=100"),
-            apiFetch<{ date: string | null }>("/stats/earliest-play"),
-        ]);
-        topSongs = songsData.results;
-        topArtists = artistsData.results;
+        const earliestData = await apiFetch<{ date: string | null }>(
+            "/stats/earliest-play",
+        );
         earliestDate = earliestData.date;
-        await loadHeatmap();
+        await reload();
         loading = false;
     });
 </script>
 
 <div class="flex flex-col gap-6 md:gap-8">
-    <h1 class="text-xl text-[var(--color-text-primary)]">
-        {m["statistics"]()}
-    </h1>
+    <div class="flex items-center justify-between">
+        <h1 class="text-xl text-[var(--color-text-primary)]">Statistics</h1>
+
+        <div
+            class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-0.5 text-sm"
+        >
+            <button
+                onclick={() => setScope("me")}
+                class="rounded px-3 py-1 {scope === 'me'
+                    ? 'bg-[var(--color-accent)] text-white'
+                    : 'text-[var(--color-text-muted)]'}"
+            >
+                My stats
+            </button>
+            <button
+                onclick={() => setScope("global")}
+                class="rounded px-3 py-1 {scope === 'global'
+                    ? 'bg-[var(--color-accent)] text-white'
+                    : 'text-[var(--color-text-muted)]'}"
+            >
+                Everyone
+            </button>
+        </div>
+    </div>
 
     {#if loading}
         <div
             class="flex h-40 items-center justify-center text-sm text-[var(--color-text-muted)]"
         >
-            {m["loading"]()}
+            Loading...
         </div>
     {:else}
         <div class="flex flex-col gap-2">
@@ -213,7 +253,7 @@
                 <h2
                     class="text-sm font-medium text-[var(--color-text-primary)]"
                 >
-                    {m["listening_activity"]()}
+                    Listening activity
                 </h2>
 
                 <div class="flex items-center gap-2">
@@ -222,11 +262,9 @@
                         onchange={loadHeatmap}
                         class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm"
                     >
-                        <option value="month"
-                            >{m["heatmap.this_month"]()}</option
-                        >
-                        <option value="year">{m["heatmap.this_year"]()}</option>
-                        <option value="all">{m["heatmap.all_time"]()}</option>
+                        <option value="month">This month</option>
+                        <option value="year">This year</option>
+                        <option value="all">All time</option>
                     </select>
 
                     {#if selectedRange === "year"}
@@ -251,7 +289,7 @@
                     <div
                         class="flex h-24 items-center justify-center text-sm text-[var(--color-text-muted)]"
                     >
-                        {m["loading"]()}
+                        Loading...
                     </div>
                 {:else}
                     <div class="flex w-fit gap-1">
@@ -282,7 +320,7 @@
                 <h2
                     class="text-sm font-medium text-[var(--color-text-primary)]"
                 >
-                    {m["top_songs"]()}
+                    Top songs
                 </h2>
                 <div
                     class="flex flex-col gap-0.5 rounded-xl bg-[var(--color-surface)] p-2 shadow-sm"
@@ -308,7 +346,7 @@
                         <div
                             class="px-2 py-4 text-center text-sm text-[var(--color-text-muted)]"
                         >
-                            {m["no_plays_yet"]()}
+                            No plays yet
                         </div>
                     {/each}
                 </div>
@@ -318,7 +356,7 @@
                 <h2
                     class="text-sm font-medium text-[var(--color-text-primary)]"
                 >
-                    {m["top_artists"]()}
+                    Top artists
                 </h2>
                 <div
                     class="flex flex-col gap-0.5 rounded-xl bg-[var(--color-surface)] p-2 shadow-sm"
@@ -344,7 +382,7 @@
                         <div
                             class="px-2 py-4 text-center text-sm text-[var(--color-text-muted)]"
                         >
-                            {m["no_plays_yet"]()}
+                            No plays yet
                         </div>
                     {/each}
                 </div>
@@ -358,12 +396,8 @@
         class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-white px-3 py-1.5 whitespace-nowrap shadow-xs"
         style="left: {tooltip.x}px; top: {tooltip.y - 8}px;"
     >
-        <p class="text-xs text-neutral-500">
-            {tooltip.date}
-        </p>
-        <p>
-            {tooltip.plays}
-        </p>
+        <p class="text-xs text-neutral-500">{tooltip.date}</p>
+        <p>{tooltip.plays}</p>
     </div>
 {/if}
 

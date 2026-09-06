@@ -14,6 +14,7 @@
     import DownloadToasts from "$lib/components/DownloadToasts.svelte";
     import "../app.css";
     import ActionToasts from "$lib/components/ActionToasts.svelte";
+    import { themeStore } from "$lib/stores/themes";
 
     let { children } = $props();
     let ready = $state(false);
@@ -31,6 +32,8 @@
         if (authEnabled && !auth.accessToken && page.url.pathname !== "/auth") {
             goto("/auth");
         }
+
+        themeStore.init();
 
         ready = true;
     });
@@ -72,7 +75,9 @@
         <a
             href={resolve(
                 localizeHref(page.url.pathname, { locale }) as Pathname,
-            )}>{locale}</a
+            )}
         >
+            {locale}
+        </a>
     {/each}
 </div>

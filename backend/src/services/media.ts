@@ -7,6 +7,7 @@ import { Music } from "../entities/Music";
 import { requireEnv } from "../env";
 import { s3Client, s3PublicClient } from "./storage";
 import { spawn } from "node:child_process";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 interface AudioProbeResult {
     codec: string | null;
@@ -169,4 +170,10 @@ export async function withThumbnailUrl(
         bitrateKbps: music.bitrateKbps ?? null,
         sampleRateHz: music.sampleRateHz ?? null,
     };
+}
+
+export async function deleteFile(key: string): Promise<void> {
+    await s3Client.send(
+        new DeleteObjectCommand({ Bucket: requireEnv("S3_BUCKET"), Key: key }),
+    );
 }

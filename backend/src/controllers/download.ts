@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { previewDownload, startDownloadJob } from "../services/download";
 import { getJobStatus } from "../services/job";
+import { requireAdmin } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/", (req, res) => {
+router.post("/", requireAdmin, (req, res) => {
     const { url, title, artist } = req.body;
     if (!url) {
         return res.status(400).json({ error: "url is required" });
@@ -28,7 +29,7 @@ router.get("/:jobId", (req, res) => {
 
 export { router as downloadRouter };
 
-router.post("/preview", async (req, res) => {
+router.post("/preview", requireAdmin, async (req, res) => {
     const { url } = req.body;
     if (!url) {
         return res.status(400).json({ error: "url is required" });

@@ -23,10 +23,7 @@ const musicRepository = AppDataSource.getRepository(Music);
 interface FfprobeOutput {
     format: {
         duration?: string;
-        tags?: {
-            title?: string;
-            artist?: string;
-        };
+        tags?: { title?: string; artist?: string };
     };
 }
 
@@ -40,12 +37,10 @@ function runFfprobe(inputPath: string): Promise<FfprobeOutput> {
             "-show_format",
             inputPath,
         ]);
-
         let stdout = "";
         proc.stdout.on("data", (chunk) => {
             stdout += chunk.toString();
         });
-
         proc.on("close", (code) => {
             if (code !== 0) {
                 reject(new Error(`ffprobe exited with code ${code}`));
@@ -102,13 +97,11 @@ async function listMusicKeys(bucket: string): Promise<string[]> {
                 ContinuationToken: continuationToken,
             }),
         );
-
         for (const obj of result.Contents ?? []) {
             if (obj.Key?.endsWith(".ogg")) {
                 keys.push(obj.Key);
             }
         }
-
         continuationToken = result.NextContinuationToken;
     } while (continuationToken);
 
@@ -123,11 +116,14 @@ async function processResyncJob(
     const workDir = path.join(tmpdir(), jobId);
 
     try {
-        updateJob(jobId, { status: "processing" });
         await mkdir(workDir, { recursive: true });
 
         const keys = await listMusicKeys(bucket);
+        const total = keys.length;
+        let processed = 0;
         const seenIds = new Set<string>();
+
+        updateJob(jobId, { status: "processing", processed, total });
 
         for (const key of keys) {
             const musicId = path.basename(key, ".ogg");
@@ -141,7 +137,6 @@ async function processResyncJob(
             const duration = probe.format.duration
                 ? Number(probe.format.duration)
                 : 0;
-
             const audioInfo = await probeAudioFile(localPath);
 
             const title = tags.title ?? musicId;
@@ -161,7 +156,6 @@ async function processResyncJob(
                     "copy",
                     thumbPath,
                 ]);
-
                 if (extracted) {
                     await uploadFile(thumbPath, thumbnailKey, "image/jpeg");
                     finalThumbnailKey = thumbnailKey;
@@ -204,18 +198,17 @@ async function processResyncJob(
             }
 
             await rm(localPath, { force: true });
+            processed++;
+            updateJob(jobId, { status: "processing", processed, total });
         }
-
-        updateJob(jobId, { status: "uploading" });
 
         const allRows = await musicRepository.find();
         const staleRows = allRows.filter((row) => !seenIds.has(row.id));
-
         if (staleRows.length > 0) {
             await musicRepository.remove(staleRows);
         }
 
-        updateJob(jobId, { status: "done" });
+        updateJob(jobId, { status: "done", processed: total, total });
     } catch (err) {
         updateJob(jobId, {
             status: "failed",
