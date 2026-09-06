@@ -4,6 +4,7 @@
     import { mobileQueueOpen } from "$lib/stores/ui";
     import MusicList from "$lib/components/MusicList.svelte";
     import type { Music } from "$lib/types";
+    import { m } from "$lib/paraglide/messages";
 
     let searchQuery = $state("");
     let scrollContainer: HTMLElement;
@@ -58,7 +59,7 @@
         >
             <div class="flex items-center justify-between">
                 <h2 class="text-sm font-medium text-neutral-900">
-                    Playing next
+                    {m["playing_next"]()}
                 </h2>
                 <button
                     onclick={() => ($mobileQueueOpen = false)}
@@ -69,7 +70,7 @@
             </div>
             <input
                 bind:value={searchQuery}
-                placeholder="Search queue"
+                placeholder={m["search_queue"]()}
                 class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
             />
             <div class="flex-1 overflow-y-auto">
@@ -91,10 +92,10 @@
 <aside
     class="hidden w-72 flex-col gap-3 border-l border-violet-100 bg-white p-4 md:flex"
 >
-    <h2 class="text-sm font-medium text-neutral-900">Playing next</h2>
+    <h2 class="text-sm font-medium text-neutral-900">{m["playing_next"]()}</h2>
     <input
         bind:value={searchQuery}
-        placeholder="Search queue"
+        placeholder={m["search_queue"]()}
         class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
     />
     <div bind:this={scrollContainer} class="flex-1 overflow-y-auto">
@@ -103,7 +104,6 @@
             activeIndex={filteredIndexed.findIndex(
                 (x) => x.index === $playerStore.currentIndex,
             )}
-            compact={true}
             showMenu={false}
             onPlay={handlePlay}
         />

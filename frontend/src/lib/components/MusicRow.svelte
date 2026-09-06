@@ -49,7 +49,9 @@
     <img
         src={music.thumbnailUrl ?? "/placeholder.png"}
         alt=""
-        class="{compact ? 'h-8 w-8' : 'h-10 w-10'} shrink-0 rounded-lg"
+        class="{compact
+            ? 'h-8 w-8'
+            : 'h-10 w-10'} shrink-0 rounded-lg object-cover"
     />
 
     <div class="flex min-w-0 flex-1 flex-col">

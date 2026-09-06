@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { apiFetch } from "$lib/api";
+    import { m } from "$lib/paraglide/messages";
     import { playerStore } from "$lib/stores/player";
     import type { Artist, Music, PaginatedResponse } from "$lib/types";
 
@@ -78,8 +79,8 @@
             bind:value={query}
             oninput={runSearch}
             placeholder={searchType === "music"
-                ? "Search songs..."
-                : "Search artists..."}
+                ? m["search_songs"]()
+                : m["search_artists"]()}
             class="flex-1 rounded-lg border border-violet-100 px-3 py-2 text-sm"
         />
     </div>

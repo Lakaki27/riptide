@@ -5,6 +5,7 @@
     import type { Music, PaginatedResponse } from "$lib/types";
     import AddSongModal from "$lib/components/AddSongModal.svelte";
     import MusicList from "$lib/components/MusicList.svelte";
+    import { m } from "$lib/paraglide/messages";
 
     let musics = $state<Music[]>([]);
     let query = $state("");
@@ -71,19 +72,19 @@
     <div
         class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
     >
-        <h1 class="text-xl text-neutral-900">All songs</h1>
+        <h1 class="text-xl text-neutral-900">Home</h1>
         <button
             onclick={() => (showAddModal = true)}
             class="rounded-xl bg-violet-500 px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-violet-600 active:scale-95"
         >
-            Add from URL
+            {m["add_from_url"]()}
         </button>
     </div>
 
     <input
         bind:value={query}
         oninput={search}
-        placeholder="Search songs..."
+        placeholder={m["search_songs"]()}
         class="rounded-xl border border-violet-100 px-3 py-2.5 text-sm shadow-sm"
     />
 

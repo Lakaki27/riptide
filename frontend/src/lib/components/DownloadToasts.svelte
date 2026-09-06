@@ -1,21 +1,10 @@
 <script lang="ts">
+    import { m } from "$lib/paraglide/messages";
     import { downloadsStore } from "$lib/stores/downloads";
+    import { translateDynKey } from "$lib/utils/translateDynKey";
 
     function statusLabel(status: string): string {
-        switch (status) {
-            case "downloading":
-                return "Downloading";
-            case "processing":
-                return "Processing";
-            case "uploading":
-                return "Uploading";
-            case "done":
-                return "Added to library";
-            case "failed":
-                return "Failed";
-            default:
-                return status;
-        }
+        return translateDynKey(`status_labels.${status}`) || status;
     }
 </script>
 

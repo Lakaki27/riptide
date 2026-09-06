@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
+    import { m } from "$lib/paraglide/messages";
     import { authStore } from "$lib/stores/auth";
 
     let email = $state("");
@@ -28,19 +29,19 @@
         onsubmit={handleSubmit}
         class="flex w-80 flex-col gap-3 rounded-lg bg-white p-6 shadow-sm"
     >
-        <h1 class="mb-2 text-xl text-neutral-900">Sign in</h1>
+        <h1 class="mb-2 text-xl text-neutral-900">{m["sign_in"]()}</h1>
 
         <input
             type="email"
             bind:value={email}
-            placeholder="Email"
+            placeholder={m["email"]()}
             required
             class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
         />
         <input
             type="password"
             bind:value={password}
-            placeholder="Password"
+            placeholder={m["password"]()}
             required
             class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
         />
@@ -54,7 +55,7 @@
             disabled={loading}
             class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600 disabled:opacity-50"
         >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? m["signing_in"]() : {m["sign_in"]()}}
         </button>
     </form>
 </div>

@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { apiFetch } from "$lib/api";
     import type { Playlist } from "$lib/types";
+    import { m } from "$lib/paraglide/messages";
 
     let playlists = $state<Playlist[]>([]);
     let showCreateModal = $state(false);
@@ -30,12 +31,12 @@
 
 <div class="flex flex-col gap-4">
     <div class="flex items-center justify-between">
-        <h1 class="text-xl text-neutral-900">Playlists</h1>
+        <h1 class="text-xl text-neutral-900">{m["playlists"]()}</h1>
         <button
             onclick={() => (showCreateModal = true)}
             class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600"
         >
-            New playlist
+            {m["new_playlist"]()}
         </button>
     </div>
 
@@ -64,7 +65,7 @@
             onsubmit={createPlaylist}
             class="flex w-80 flex-col gap-3 rounded-lg bg-white p-6"
         >
-            <h2 class="text-lg text-neutral-900">New playlist</h2>
+            <h2 class="text-lg text-neutral-900">{m["new_playlist"]()}</h2>
             <input
                 bind:value={newPlaylistName}
                 placeholder="Playlist name"
@@ -77,13 +78,13 @@
                     onclick={() => (showCreateModal = false)}
                     class="rounded-lg px-3 py-2 text-sm text-neutral-500 hover:bg-violet-100"
                 >
-                    Cancel
+                    {m["cancel"]()}
                 </button>
                 <button
                     type="submit"
                     class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600"
                 >
-                    Create
+                    {m["create"]()}
                 </button>
             </div>
         </form>

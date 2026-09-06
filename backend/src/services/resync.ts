@@ -6,9 +6,9 @@ import path from "node:path";
 import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import {
-	GetObjectCommand,
-	HeadObjectCommand,
-	ListObjectsV2Command,
+    GetObjectCommand,
+    HeadObjectCommand,
+    ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { nanoid } from "nanoid";
 import { AppDataSource } from "../data-source";
@@ -16,209 +16,219 @@ import { Music } from "../entities/Music";
 import { requireEnv } from "../env";
 import { s3Client } from "../storage";
 import { createJob, updateJob } from "./job";
-import { findOrCreateArtist, uploadFile } from "./media";
+import { findOrCreateArtist, probeAudioFile, uploadFile } from "./media";
 
 const musicRepository = AppDataSource.getRepository(Music);
 
 interface FfprobeOutput {
-	format: {
-		duration?: string;
-		tags?: {
-			title?: string;
-			artist?: string;
-		};
-	};
+    format: {
+        duration?: string;
+        tags?: {
+            title?: string;
+            artist?: string;
+        };
+    };
 }
 
 function runFfprobe(inputPath: string): Promise<FfprobeOutput> {
-	return new Promise((resolve, reject) => {
-		const proc = spawn("ffprobe", [
-			"-v",
-			"quiet",
-			"-print_format",
-			"json",
-			"-show_format",
-			inputPath,
-		]);
+    return new Promise((resolve, reject) => {
+        const proc = spawn("ffprobe", [
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            inputPath,
+        ]);
 
-		let stdout = "";
-		proc.stdout.on("data", (chunk) => {
-			stdout += chunk.toString();
-		});
+        let stdout = "";
+        proc.stdout.on("data", (chunk) => {
+            stdout += chunk.toString();
+        });
 
-		proc.on("close", (code) => {
-			if (code !== 0) {
-				reject(new Error(`ffprobe exited with code ${code}`));
-				return;
-			}
-			try {
-				resolve(JSON.parse(stdout));
-			} catch {
-				reject(new Error("failed to parse ffprobe output"));
-			}
-		});
-	});
+        proc.on("close", (code) => {
+            if (code !== 0) {
+                reject(new Error(`ffprobe exited with code ${code}`));
+                return;
+            }
+            try {
+                resolve(JSON.parse(stdout));
+            } catch {
+                reject(new Error("failed to parse ffprobe output"));
+            }
+        });
+    });
 }
 
 function runFfmpeg(args: string[]): Promise<boolean> {
-	return new Promise((resolve) => {
-		const proc = spawn("ffmpeg", ["-y", ...args]);
-		proc.on("close", (code) => resolve(code === 0));
-	});
+    return new Promise((resolve) => {
+        const proc = spawn("ffmpeg", ["-y", ...args]);
+        proc.on("close", (code) => resolve(code === 0));
+    });
 }
 
 async function objectExists(bucket: string, key: string): Promise<boolean> {
-	try {
-		await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-		return true;
-	} catch {
-		return false;
-	}
+    try {
+        await s3Client.send(
+            new HeadObjectCommand({ Bucket: bucket, Key: key }),
+        );
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 async function downloadObjectToFile(
-	bucket: string,
-	key: string,
-	destPath: string,
+    bucket: string,
+    key: string,
+    destPath: string,
 ): Promise<void> {
-	const result = await s3Client.send(
-		new GetObjectCommand({ Bucket: bucket, Key: key }),
-	);
-	const body = result.Body as Readable;
-	await pipeline(body, createWriteStream(destPath));
+    const result = await s3Client.send(
+        new GetObjectCommand({ Bucket: bucket, Key: key }),
+    );
+    const body = result.Body as Readable;
+    await pipeline(body, createWriteStream(destPath));
 }
 
 async function listMusicKeys(bucket: string): Promise<string[]> {
-	const keys: string[] = [];
-	let continuationToken: string | undefined;
+    const keys: string[] = [];
+    let continuationToken: string | undefined;
 
-	do {
-		const result = await s3Client.send(
-			new ListObjectsV2Command({
-				Bucket: bucket,
-				Prefix: "musics/",
-				ContinuationToken: continuationToken,
-			}),
-		);
+    do {
+        const result = await s3Client.send(
+            new ListObjectsV2Command({
+                Bucket: bucket,
+                Prefix: "musics/",
+                ContinuationToken: continuationToken,
+            }),
+        );
 
-		for (const obj of result.Contents ?? []) {
-			if (obj.Key?.endsWith(".ogg")) {
-				keys.push(obj.Key);
-			}
-		}
+        for (const obj of result.Contents ?? []) {
+            if (obj.Key?.endsWith(".ogg")) {
+                keys.push(obj.Key);
+            }
+        }
 
-		continuationToken = result.NextContinuationToken;
-	} while (continuationToken);
+        continuationToken = result.NextContinuationToken;
+    } while (continuationToken);
 
-	return keys;
+    return keys;
 }
 
 async function processResyncJob(
-	jobId: string,
-	regenerateThumbnails: boolean,
+    jobId: string,
+    regenerateThumbnails: boolean,
 ): Promise<void> {
-	const bucket = requireEnv("S3_BUCKET");
-	const workDir = path.join(tmpdir(), jobId);
+    const bucket = requireEnv("S3_BUCKET");
+    const workDir = path.join(tmpdir(), jobId);
 
-	try {
-		updateJob(jobId, { status: "processing" });
-		await mkdir(workDir, { recursive: true });
+    try {
+        updateJob(jobId, { status: "processing" });
+        await mkdir(workDir, { recursive: true });
 
-		const keys = await listMusicKeys(bucket);
-		const seenIds = new Set<string>();
+        const keys = await listMusicKeys(bucket);
+        const seenIds = new Set<string>();
 
-		for (const key of keys) {
-			const musicId = path.basename(key, ".ogg");
-			seenIds.add(musicId);
+        for (const key of keys) {
+            const musicId = path.basename(key, ".ogg");
+            seenIds.add(musicId);
 
-			const localPath = path.join(workDir, `${musicId}.ogg`);
-			await downloadObjectToFile(bucket, key, localPath);
+            const localPath = path.join(workDir, `${musicId}.ogg`);
+            await downloadObjectToFile(bucket, key, localPath);
 
-			const probe = await runFfprobe(localPath);
-			const tags = probe.format.tags ?? {};
-			const duration = probe.format.duration
-				? Number(probe.format.duration)
-				: 0;
+            const probe = await runFfprobe(localPath);
+            const tags = probe.format.tags ?? {};
+            const duration = probe.format.duration
+                ? Number(probe.format.duration)
+                : 0;
 
-			const title = tags.title ?? musicId;
-			const artistName = tags.artist ?? "Unknown Artist";
-			const artist = await findOrCreateArtist(artistName);
+            const audioInfo = await probeAudioFile(localPath);
 
-			const thumbnailKey = `thumbnails/${musicId}.jpg`;
-			let finalThumbnailKey = "";
+            const title = tags.title ?? musicId;
+            const artistName = tags.artist ?? "Unknown Artist";
+            const artist = await findOrCreateArtist(artistName);
 
-			if (regenerateThumbnails) {
-				const thumbPath = path.join(workDir, `${musicId}-thumb.jpg`);
-				const extracted = await runFfmpeg([
-					"-i",
-					localPath,
-					"-an",
-					"-vcodec",
-					"copy",
-					thumbPath,
-				]);
+            const thumbnailKey = `thumbnails/${musicId}.jpg`;
+            let finalThumbnailKey = "";
 
-				if (extracted) {
-					await uploadFile(thumbPath, thumbnailKey, "image/jpeg");
-					finalThumbnailKey = thumbnailKey;
-				}
-			} else {
-				const existing = await objectExists(bucket, thumbnailKey);
-				finalThumbnailKey = existing ? thumbnailKey : "";
-			}
+            if (regenerateThumbnails) {
+                const thumbPath = path.join(workDir, `${musicId}-thumb.jpg`);
+                const extracted = await runFfmpeg([
+                    "-i",
+                    localPath,
+                    "-an",
+                    "-vcodec",
+                    "copy",
+                    thumbPath,
+                ]);
 
-			const existingRow = await musicRepository.findOne({
-				where: { id: musicId },
-			});
+                if (extracted) {
+                    await uploadFile(thumbPath, thumbnailKey, "image/jpeg");
+                    finalThumbnailKey = thumbnailKey;
+                }
+            } else {
+                const existing = await objectExists(bucket, thumbnailKey);
+                finalThumbnailKey = existing ? thumbnailKey : "";
+            }
 
-			if (existingRow) {
-				existingRow.title = title;
-				existingRow.artist = artist;
-				existingRow.durationSeconds = Math.round(duration);
-				existingRow.fileKey = key;
-				if (regenerateThumbnails || finalThumbnailKey) {
-					existingRow.thumbnailKey =
-						finalThumbnailKey || existingRow.thumbnailKey;
-				}
-				await musicRepository.save(existingRow);
-			} else {
-				const music = musicRepository.create({
-					id: musicId,
-					title,
-					artist,
-					durationSeconds: Math.round(duration),
-					fileKey: key,
-					thumbnailKey: finalThumbnailKey,
-				});
-				await musicRepository.save(music);
-			}
+            const existingRow = await musicRepository.findOne({
+                where: { id: musicId },
+            });
 
-			await rm(localPath, { force: true });
-		}
+            if (existingRow) {
+                existingRow.title = title;
+                existingRow.artist = artist;
+                existingRow.durationSeconds = Math.round(duration);
+                existingRow.fileKey = key;
+                existingRow.codec = audioInfo.codec ?? undefined;
+                existingRow.bitrateKbps = audioInfo.bitrateKbps ?? undefined;
+                existingRow.sampleRateHz = audioInfo.sampleRateHz ?? undefined;
+                if (regenerateThumbnails || finalThumbnailKey) {
+                    existingRow.thumbnailKey =
+                        finalThumbnailKey || existingRow.thumbnailKey;
+                }
+                await musicRepository.save(existingRow);
+            } else {
+                const music = musicRepository.create({
+                    id: musicId,
+                    title,
+                    artist,
+                    durationSeconds: Math.round(duration),
+                    fileKey: key,
+                    thumbnailKey: finalThumbnailKey,
+                    codec: audioInfo.codec ?? undefined,
+                    bitrateKbps: audioInfo.bitrateKbps ?? undefined,
+                    sampleRateHz: audioInfo.sampleRateHz ?? undefined,
+                });
+                await musicRepository.save(music);
+            }
 
-		updateJob(jobId, { status: "uploading" });
+            await rm(localPath, { force: true });
+        }
 
-		const allRows = await musicRepository.find();
-		const staleRows = allRows.filter((row) => !seenIds.has(row.id));
+        updateJob(jobId, { status: "uploading" });
 
-		if (staleRows.length > 0) {
-			await musicRepository.remove(staleRows);
-		}
+        const allRows = await musicRepository.find();
+        const staleRows = allRows.filter((row) => !seenIds.has(row.id));
 
-		updateJob(jobId, { status: "done" });
-	} catch (err) {
-		updateJob(jobId, {
-			status: "failed",
-			error: err instanceof Error ? err.message : "unknown error",
-		});
-	} finally {
-		await rm(workDir, { recursive: true, force: true });
-	}
+        if (staleRows.length > 0) {
+            await musicRepository.remove(staleRows);
+        }
+
+        updateJob(jobId, { status: "done" });
+    } catch (err) {
+        updateJob(jobId, {
+            status: "failed",
+            error: err instanceof Error ? err.message : "unknown error",
+        });
+    } finally {
+        await rm(workDir, { recursive: true, force: true });
+    }
 }
 
 export function startResyncJob(regenerateThumbnails: boolean): string {
-	const jobId = nanoid(12);
-	createJob(jobId);
-	processResyncJob(jobId, regenerateThumbnails);
-	return jobId;
+    const jobId = nanoid(12);
+    createJob(jobId);
+    processResyncJob(jobId, regenerateThumbnails);
+    return jobId;
 }

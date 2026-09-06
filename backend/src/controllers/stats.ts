@@ -80,22 +80,45 @@ router.get("/summary", async (_req, res) => {
 });
 
 router.get("/heatmap", async (req, res) => {
-    const days = req.query.days ? Number(req.query.days) : 365;
+    const startDate =
+        typeof req.query.startDate === "string" ? req.query.startDate : null;
+    const endDate =
+        typeof req.query.endDate === "string" ? req.query.endDate : null;
+
+    if (!startDate || !endDate) {
+        return res
+            .status(400)
+            .json({ error: "startDate and endDate are required" });
+    }
 
     const results = await playEventRepository
         .createQueryBuilder("playEvent")
-        .select("DATE(playEvent.playedAt)", "date")
+        .select("TO_CHAR(playEvent.playedAt, 'YYYY-MM-DD')", "date")
         .addSelect("COUNT(playEvent.id)", "count")
-        .where("playEvent.playedAt >= NOW() - (:days || ' days')::interval", {
-            days,
+        .where("playEvent.playedAt >= :startDate", {
+            startDate: `${startDate} 00:00:00`,
         })
-        .groupBy("DATE(playEvent.playedAt)")
-        .orderBy("DATE(playEvent.playedAt)", "ASC")
+        .andWhere("playEvent.playedAt < :endDate", {
+            endDate: `${endDate} 23:59:59`,
+        })
+        .groupBy("TO_CHAR(playEvent.playedAt, 'YYYY-MM-DD')")
+        .orderBy("TO_CHAR(playEvent.playedAt, 'YYYY-MM-DD')", "ASC")
         .getRawMany();
 
     res.json({
         results: results.map((r) => ({ date: r.date, count: Number(r.count) })),
+        startDate,
+        endDate,
     });
+});
+
+router.get("/earliest-play", async (_req, res) => {
+    const earliest = await playEventRepository
+        .createQueryBuilder("playEvent")
+        .select("TO_CHAR(MIN(playEvent.playedAt), 'YYYY-MM-DD')", "date")
+        .getRawOne();
+
+    res.json({ date: earliest?.date ?? null });
 });
 
 export { router as statsRouter };

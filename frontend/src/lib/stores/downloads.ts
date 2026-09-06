@@ -50,10 +50,13 @@ function createDownloadsStore() {
 
     return {
         subscribe,
-        async start(url: string) {
+        async start(
+            url: string,
+            overrides?: { title?: string; artist?: string },
+        ) {
             const { jobId } = await apiFetch<{ jobId: string }>("/downloads", {
                 method: "POST",
-                body: JSON.stringify({ url }),
+                body: JSON.stringify({ url, ...overrides }),
             });
 
             update((jobs) => [

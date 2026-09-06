@@ -4,3 +4,6 @@ node_modules
 
 .env
 package-lock.json
+# Paraglide
+src/lib/paraglide
+project.inlang/cache/

@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { apiFetch } from "$lib/api";
     import type { Artist, PaginatedResponse } from "$lib/types";
+    import { m } from "$lib/paraglide/messages";
 
     let artists = $state<Artist[]>([]);
     let query = $state("");
@@ -58,7 +59,7 @@
     <input
         bind:value={query}
         oninput={search}
-        placeholder="Search artists..."
+        placeholder={m["search_artists"]()}
         class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
     />
 

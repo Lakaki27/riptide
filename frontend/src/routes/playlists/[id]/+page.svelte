@@ -5,6 +5,7 @@
     import { playerStore } from "$lib/stores/player";
     import type { Music, Playlist, PaginatedResponse } from "$lib/types";
     import MusicList from "$lib/components/MusicList.svelte";
+    import { m } from "$lib/paraglide/messages";
 
     const playlistId = page.params.id;
 
@@ -67,20 +68,20 @@
                     onclick={() => (showAddModal = true)}
                     class="rounded-lg border border-violet-100 px-3 py-2 text-sm text-neutral-500 hover:bg-violet-100"
                 >
-                    Add song
+                    {m["add_song"]()}
                 </button>
                 <button
                     onclick={playAll}
                     class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600"
                 >
-                    Play all
+                    {m["play_all"]()}
                 </button>
             </div>
         </div>
 
         <input
             bind:value={localQuery}
-            placeholder="Search in this playlist"
+            placeholder={m["search_in_this_playlist"]()}
             class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
         />
 
@@ -105,7 +106,7 @@
             <input
                 bind:value={addQuery}
                 oninput={searchToAdd}
-                placeholder="Search songs"
+                placeholder={m["search_songs"]()}
                 class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
             />
             <div class="flex flex-1 flex-col gap-1 overflow-y-auto">
