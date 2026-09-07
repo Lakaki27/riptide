@@ -5,7 +5,10 @@ import { getJobStatus } from "../services/job";
 import { startUploadJob } from "../services/upload";
 import { requireAdmin } from "../middleware/auth";
 
-const upload = multer({ dest: tmpdir() });
+const upload = multer({
+    dest: tmpdir(),
+    limits: { fileSize: 200 * 1024 * 1024 },
+});
 const router = Router();
 
 router.post("/", requireAdmin, upload.array("files"), (req, res) => {

@@ -16,8 +16,10 @@ export const app = express();
 
 app.use(express.json());
 
+app.set("trust proxy", 1);
+
 app.get("/health", (_req, res) => {
-	res.json({ status: "ok" });
+    res.json({ status: "ok" });
 });
 
 app.use("/config", configRouter);

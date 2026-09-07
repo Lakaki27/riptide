@@ -6,6 +6,7 @@
     import AddSongModal from "$lib/components/AddSongModal.svelte";
     import MusicList from "$lib/components/MusicList.svelte";
     import { m } from "$lib/paraglide/messages";
+    import { authStore } from "$lib/stores/auth";
 
     let musics = $state<Music[]>([]);
     let query = $state("");
@@ -73,12 +74,14 @@
         class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
     >
         <h1 class="text-xl text-neutral-900">Home</h1>
-        <button
-            onclick={() => (showAddModal = true)}
-            class="rounded-xl bg-violet-500 px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-violet-600 active:scale-95"
-        >
-            {m["add_from_url"]()}
-        </button>
+        {#if $authStore.role === "admin"}
+            <button
+                onclick={() => (showAddModal = true)}
+                class="rounded-xl bg-violet-500 px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-violet-600 active:scale-95"
+            >
+                {m["add_music"]()}
+            </button>
+        {/if}
     </div>
 
     <input

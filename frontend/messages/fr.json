@@ -1,7 +1,7 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
     "now_playing": "En train de jouer",
-    "add_from_url": "Ajouter par URL",
+    "add_music": "Ajouter une musique",
     "close": "Fermer",
     "starting": "Démarrage en cours...",
     "start_download": "Lancer le téléchargement",
@@ -42,5 +42,7 @@
     },
     "top_songs": "Titres préférés",
     "no_plays_yet": "Aucune écoute pour le moment",
-    "top_artists": "Artistes préférés"
+    "top_artists": "Artistes préférés",
+    "legal_disclaimer_download_title": "Avertissement légal et conditions d'utilisation",
+    "legal_disclaimer_download_text": "<p>En utilisant ce logiciel, et particulièrement la fonctionnalité intégrée <strong>yt-dlp</strong>, vous acceptez expressément les conditions suivantes :</p><ul><li><strong>Utilisation autorisée uniquement :</strong> Il vous est strictement interdit d'utiliser la fonctionnalité yt-dlp pour télécharger, convertir ou distribuer de la musique ou du contenu audio protégé par le droit d'auteur, sauf si vous en possédez les droits, disposez d'une licence valide, ou si le contenu relève explicitement du domaine public.</li><li><strong>Responsabilité de l'utilisateur :</strong> Vous assumez l'intégralité de la responsabilité juridique quant aux contenus consultés, récupérés ou traités via ce logiciel. Le développeur ne cautionne, ne soutient ni ne facilite le téléchargement illégal ou la violation des droits d'auteur.</li><li><strong>Respect des conditions d'utilisation :</strong> Vous reconnaissez que le téléchargement de médias depuis des plateformes tiers peut violer leurs Conditions Générales d'Utilisation. Vous utilisez ces fonctionnalités entièrement à vos risques et périls.</li><li><strong>Absence d'affiliation :</strong> Ce logiciel est un projet personnel indépendant. Il n'est en aucun cas affilié, approuvé ou associé à Spotify, YouTube, ni aux développeurs de yt-dlp.</li></ul>"
 }

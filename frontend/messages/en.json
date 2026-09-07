@@ -1,7 +1,7 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
     "now_playing": "Now Playing",
-    "add_from_url": "Add from URL",
+    "add_music": "Add music",
     "close": "Close",
     "starting": "Starting...",
     "start_download": "Start download",
@@ -42,5 +42,7 @@
     },
     "top_songs": "Top songs",
     "no_plays_yet": "No plays yet",
-    "top_artists": "Top artists"
+    "top_artists": "Top artists",
+    "legal_disclaimer_download_title": "Disclaimer of Responsibility & User Compliance",
+    "legal_disclaimer_download_text": "<p>By using this software, particularly any integrated <strong>yt-dlp</strong> functionality, you expressly agree to the following conditions:</p><ul><li><strong>Authorized Use Only:</strong> You are strictly prohibited from using the yt-dlp feature to download, convert, or distribute copyrighted music or audio content unless you own the copyright, hold a valid license to do so, or the content is explicitly in the public domain.</li><li><strong>Strict Liability & Responsibility:</strong> You assume 100% of the legal responsibility for any content accessed, retrieved, or processed using this software. The developer does not condone, support, or facilitate copyright infringement or unlawful distribution of media.</li><li><strong>Terms of Service Compliance:</strong> You acknowledge that downloading media from third-party platforms may violate those platforms' Terms of Service. You use these features entirely at your own risk.</li><li><strong>No Endorsement or Affiliation:</strong> This application is an independent personal project. It is not affiliated with, endorsed by, or associated with Spotify, YouTube, or the maintainers of yt-dlp.</li></ul>"
 }

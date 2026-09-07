@@ -144,7 +144,7 @@ jobs:
               run: npm audit --audit-level=high
 
             - name: OSV vulnerability scan
-              uses: google/osv-scanner-action@v2
+              uses: google/osv-scanner-action@v2.3.5
               with:
                   scan-args: |-
                       --lockfile=backend/package-lock.json

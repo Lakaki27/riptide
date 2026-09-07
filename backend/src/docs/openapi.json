@@ -1,0 +1,58 @@
+{
+    "openapi": "3.0.0",
+    "info": { "title": "Riptide API", "version": "1.0.0" },
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "summary": "Log in",
+                "responses": { "200": { "description": "OK" } }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "summary": "Get current user",
+                "responses": { "200": { "description": "OK" } }
+            }
+        },
+        "/musics": {
+            "get": {
+                "summary": "List songs, paginated",
+                "responses": { "200": { "description": "OK" } }
+            }
+        },
+        "/musics/{id}/stream-url": {
+            "get": {
+                "summary": "Get a presigned playback URL",
+                "responses": { "200": { "description": "OK" } }
+            }
+        },
+        "/playlists": {
+            "get": {
+                "summary": "List playlists",
+                "responses": { "200": { "description": "OK" } }
+            },
+            "post": {
+                "summary": "Create a playlist (admin only)",
+                "responses": { "201": { "description": "Created" } }
+            }
+        },
+        "/search": {
+            "get": {
+                "summary": "Search songs or artists",
+                "responses": { "200": { "description": "OK" } }
+            }
+        },
+        "/downloads": {
+            "post": {
+                "summary": "Start a URL download job (admin only)",
+                "responses": { "202": { "description": "Accepted" } }
+            }
+        },
+        "/stats/top-songs": {
+            "get": {
+                "summary": "Most played songs",
+                "responses": { "200": { "description": "OK" } }
+            }
+        }
+    }
+}

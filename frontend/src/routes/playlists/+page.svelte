@@ -3,6 +3,7 @@
     import { apiFetch } from "$lib/api";
     import type { Playlist } from "$lib/types";
     import { m } from "$lib/paraglide/messages";
+    import { authStore } from "$lib/stores/auth";
 
     let playlists = $state<Playlist[]>([]);
     let showCreateModal = $state(false);
@@ -32,12 +33,14 @@
 <div class="flex flex-col gap-4">
     <div class="flex items-center justify-between">
         <h1 class="text-xl text-neutral-900">{m["playlists"]()}</h1>
-        <button
-            onclick={() => (showCreateModal = true)}
-            class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600"
-        >
-            {m["new_playlist"]()}
-        </button>
+        {#if $authStore.role === "admin"}
+            <button
+                onclick={() => (showCreateModal = true)}
+                class="rounded-lg bg-violet-500 px-3 py-2 text-sm text-white hover:bg-violet-600"
+            >
+                {m["new_playlist"]()}
+            </button>
+        {/if}
     </div>
 
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">

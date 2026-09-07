@@ -4,6 +4,7 @@
     import { toastStore } from "$lib/stores/toast";
     import { apiFetch } from "$lib/api";
     import type { Music } from "$lib/types";
+    import { authStore } from "$lib/stores/auth";
 
     interface Props {
         music: Music;
@@ -141,16 +142,18 @@
                 Play next
             </button>
 
-            <button
-                bind:this={playlistRowEl}
-                onclick={togglePlaylistSubmenu}
-                class="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm active:scale-95 {showPlaylistSubmenu
-                    ? 'bg-[var(--color-surface-hover)] text-[var(--color-accent)]'
-                    : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'}"
-            >
-                Add to playlist
-                <i class="bx bx-chevron-right"></i>
-            </button>
+            {#if $authStore.role === "admin"}
+                <button
+                    bind:this={playlistRowEl}
+                    onclick={togglePlaylistSubmenu}
+                    class="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm active:scale-95 {showPlaylistSubmenu
+                        ? 'bg-[var(--color-surface-hover)] text-[var(--color-accent)]'
+                        : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'}"
+                >
+                    Add to playlist
+                    <i class="bx bx-chevron-right"></i>
+                </button>
+            {/if}
 
             {#if playlistId}
                 <button

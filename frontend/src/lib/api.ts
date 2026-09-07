@@ -4,12 +4,16 @@ import { goto } from "$app/navigation";
 
 interface ApiOptions extends RequestInit {
     skipAuth?: boolean;
+    skipJsonContentType?: boolean;
 }
 
 async function rawFetch(path: string, options: ApiOptions): Promise<Response> {
-    const { skipAuth, headers, ...rest } = options;
+    const { skipAuth, skipJsonContentType, headers, ...rest } = options;
     const finalHeaders = new Headers(headers);
-    finalHeaders.set("Content-Type", "application/json");
+
+    if (!skipJsonContentType) {
+        finalHeaders.set("Content-Type", "application/json");
+    }
 
     if (!skipAuth) {
         const auth = get(authStore);

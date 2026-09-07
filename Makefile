@@ -1,7 +1,8 @@
 REGISTRY := ghcr.io/lakaki27
 BACKEND_IMAGE := $(REGISTRY)/riptide-backend
 FRONTEND_IMAGE := $(REGISTRY)/riptide-frontend
-NIXOS_FLAKE_DIR := ../maelstrom-config
+NIXOS_FLAKE_DIR := /home/leo/Codebase/Perso/maelstrom
+
 
 .PHONY: deploy build-images push-images init test test-back test-front
 
