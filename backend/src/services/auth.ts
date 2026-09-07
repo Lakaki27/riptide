@@ -10,12 +10,8 @@ const userRepository = AppDataSource.getRepository(User);
 const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
 
 const ACCESS_TOKEN_TTL = "24h";
-const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 1 month
 const RESET_TOKEN_TTL = "15m";
-
-export function isAuthEnabled(): boolean {
-    return process.env.AUTH_ENABLED === "true";
-}
 
 function hashToken(token: string): string {
     return createHash("sha256").update(token).digest("hex");

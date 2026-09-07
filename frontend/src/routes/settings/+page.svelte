@@ -1,12 +1,12 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
     import { apiFetch } from "$lib/api";
     import { authStore } from "$lib/stores/auth";
+    import { themeStore } from "$lib/stores/theme";
     import { toastStore } from "$lib/stores/toast";
-    import type { Music, PaginatedResponse } from "$lib/types";
-    import { themeStore } from "$lib/stores/themes";
     import { resyncStore } from "$lib/stores/resync";
-    import { goto } from "$app/navigation";
+    import type { Music, PaginatedResponse } from "$lib/types";
 
     interface Me {
         id: string;
@@ -24,9 +24,7 @@
         createdAt: string;
     }
 
-    const isAdmin = $derived(
-        $authStore.role === "admin" || $authStore.authEnabled === false,
-    );
+    const isAdmin = $derived($authStore.role === "admin");
 
     let me = $state<Me | null>(null);
     let selectedTheme = $state<"light" | "dark" | "system">("system");
@@ -36,6 +34,7 @@
     let newPassword = $state("");
     let confirmPassword = $state("");
     let passwordError = $state("");
+    let minPasswordLength = $state(0);
 
     let users = $state<AdminUser[]>([]);
     let showCreateUserModal = $state(false);
@@ -45,18 +44,15 @@
         null,
     );
 
+    let confirmDeleteUser = $state<AdminUser | null>(null);
+    let confirmResetUser = $state<AdminUser | null>(null);
+
     let showDeleteSongModal = $state(false);
     let songQuery = $state("");
     let songResults = $state<Music[]>([]);
     let confirmDeleteSong = $state<Music | null>(null);
 
     async function loadMe() {
-        if ($authStore.authEnabled === false) {
-            selectedTheme =
-                ($themeStore as unknown as "light" | "dark" | "system") ??
-                "system";
-            return;
-        }
         me = await apiFetch<Me>("/auth/me");
         selectedTheme = (me.theme as "light" | "dark" | "system") ?? "system";
         selectedLanguage = me.language;
@@ -64,22 +60,18 @@
 
     async function saveTheme() {
         themeStore.set(selectedTheme);
-        if ($authStore.authEnabled) {
-            await apiFetch("/auth/me", {
-                method: "PATCH",
-                body: JSON.stringify({ theme: selectedTheme }),
-            });
-        }
+        await apiFetch("/auth/me", {
+            method: "PATCH",
+            body: JSON.stringify({ theme: selectedTheme }),
+        });
         toastStore.show("Theme updated");
     }
 
     async function saveLanguage() {
-        if ($authStore.authEnabled) {
-            await apiFetch("/auth/me", {
-                method: "PATCH",
-                body: JSON.stringify({ language: selectedLanguage }),
-            });
-        }
+        await apiFetch("/auth/me", {
+            method: "PATCH",
+            body: JSON.stringify({ language: selectedLanguage }),
+        });
         toastStore.show("Language updated");
     }
 
@@ -87,8 +79,8 @@
         e.preventDefault();
         passwordError = "";
 
-        if (newPassword.length < 8) {
-            passwordError = "New password must be at least 8 characters";
+        if (minPasswordLength > 0 && newPassword.length < minPasswordLength) {
+            passwordError = `New password must be at least ${minPasswordLength} characters`;
             return;
         }
         if (newPassword !== confirmPassword) {
@@ -138,21 +130,40 @@
         await loadUsers();
     }
 
-    async function handleResetUserPassword(user: AdminUser) {
-        const result = await apiFetch<{ password: string }>(
-            `/auth/users/${user.id}/reset-password`,
-            {
-                method: "POST",
-            },
-        );
-        credentialModal = { email: user.email, password: result.password };
-        await loadUsers();
+    async function confirmedResetUser() {
+        if (!confirmResetUser) return;
+        try {
+            const result = await apiFetch<{ password: string }>(
+                `/auth/users/${confirmResetUser.id}/reset-password`,
+                { method: "POST" },
+            );
+            credentialModal = {
+                email: confirmResetUser.email,
+                password: result.password,
+            };
+            await loadUsers();
+        } catch (err) {
+            toastStore.show(
+                err instanceof Error ? err.message : "Could not reset password",
+            );
+        }
+        confirmResetUser = null;
     }
 
-    async function handleDeleteUser(user: AdminUser) {
-        await apiFetch(`/auth/users/${user.id}`, { method: "DELETE" });
-        toastStore.show("User deleted");
-        await loadUsers();
+    async function confirmedDeleteUser() {
+        if (!confirmDeleteUser) return;
+        try {
+            await apiFetch(`/auth/users/${confirmDeleteUser.id}`, {
+                method: "DELETE",
+            });
+            toastStore.show("User deleted");
+            await loadUsers();
+        } catch (err) {
+            toastStore.show(
+                err instanceof Error ? err.message : "Could not delete user",
+            );
+        }
+        confirmDeleteUser = null;
     }
 
     async function searchSongsToDelete() {
@@ -174,7 +185,16 @@
         confirmDeleteSong = null;
     }
 
+    function handleLogout() {
+        authStore.clear();
+        goto("/auth");
+    }
+
     onMount(async () => {
+        const policy = await apiFetch<{ minLength: number }>(
+            "/auth/password-policy",
+        );
+        minPasswordLength = policy.minLength;
         await loadMe();
         await loadUsers();
     });
@@ -197,7 +217,7 @@
                 <select
                     bind:value={selectedTheme}
                     onchange={saveTheme}
-                    class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
+                    class="w-fit rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
                 >
                     <option value="system">System</option>
                     <option value="light">Light</option>
@@ -212,7 +232,7 @@
                 <select
                     bind:value={selectedLanguage}
                     onchange={saveLanguage}
-                    class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
+                    class="w-fit rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
                 >
                     <option value="en">English</option>
                     <option value="fr">Français</option>
@@ -227,8 +247,13 @@
         </h2>
         <form
             onsubmit={handleChangePassword}
-            class="flex flex-col gap-2 rounded-xl bg-[var(--color-surface)] p-4 shadow-sm"
+            class="flex w-fit flex-col gap-2 rounded-xl bg-[var(--color-surface)] p-4 shadow-sm"
         >
+            {#if minPasswordLength > 0}
+                <p class="text-sm text-[var(--color-text-muted)]">
+                    Must be at least {minPasswordLength} characters.
+                </p>
+            {/if}
             <input
                 type="password"
                 bind:value={currentPassword}
@@ -262,18 +287,6 @@
         </form>
     </section>
 
-    <section class="flex flex-col gap-3">
-        <button
-            onclick={() => {
-                authStore.clear();
-                goto("/auth");
-            }}
-            class="w-fit rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]"
-        >
-            Log out
-        </button>
-    </section>
-
     {#if isAdmin}
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
@@ -284,7 +297,7 @@
                 </h2>
                 <button
                     onclick={() => (showCreateUserModal = true)}
-                    class="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm text-white hover:bg-[var(--color-accent-hover)]"
+                    class="w-fit rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm text-white hover:bg-[var(--color-accent-hover)]"
                 >
                     New user
                 </button>
@@ -308,14 +321,14 @@
                             </span>
                         </div>
                         <button
-                            onclick={() => handleResetUserPassword(user)}
-                            class="rounded-lg px-2 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                            onclick={() => (confirmResetUser = user)}
+                            class="w-fit rounded-lg px-2 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                         >
                             Reset password
                         </button>
                         <button
-                            onclick={() => handleDeleteUser(user)}
-                            class="rounded-lg px-2 py-1.5 text-sm text-red-500 hover:bg-red-50"
+                            onclick={() => (confirmDeleteUser = user)}
+                            class="w-fit rounded-lg px-2 py-1.5 text-sm text-red-500 hover:bg-red-50"
                         >
                             Delete
                         </button>
@@ -328,46 +341,61 @@
             <h2 class="text-sm font-medium text-[var(--color-text-primary)]">
                 Library management
             </h2>
-            <div class="rounded-xl bg-[var(--color-surface)] p-4 shadow-sm">
+            <div
+                class="flex w-fit flex-wrap gap-3 rounded-xl bg-[var(--color-surface)] p-4 shadow-sm"
+            >
+                <div class="flex flex-col gap-2">
+                    <button
+                        onclick={() => resyncStore.start()}
+                        disabled={$resyncStore.running}
+                        class="w-fit rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
+                    >
+                        {$resyncStore.running
+                            ? "Resyncing..."
+                            : "Resync library"}
+                    </button>
+
+                    {#if $resyncStore.running}
+                        <div class="flex w-48 flex-col gap-1">
+                            <div
+                                class="h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]"
+                            >
+                                <div
+                                    class="h-full bg-[var(--color-accent)] transition-all"
+                                    style="width: {$resyncStore.total > 0
+                                        ? ($resyncStore.processed /
+                                              $resyncStore.total) *
+                                          100
+                                        : 0}%"
+                                ></div>
+                            </div>
+                            <span
+                                class="text-sm text-[var(--color-text-muted)]"
+                            >
+                                {$resyncStore.processed} / {$resyncStore.total} songs
+                            </span>
+                        </div>
+                    {/if}
+                </div>
+
                 <button
                     onclick={() => (showDeleteSongModal = true)}
-                    class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]"
+                    class="w-fit rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]"
                 >
                     Delete songs
                 </button>
             </div>
-
-            <div class="rounded-xl bg-[var(--color-surface)] p-4 shadow-sm">
-                <button
-                    onclick={() => resyncStore.start()}
-                    disabled={$resyncStore.running}
-                    class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
-                >
-                    {$resyncStore.running ? "Resyncing..." : "Resync library"}
-                </button>
-
-                {#if $resyncStore.running}
-                    <div class="mt-2 flex flex-col gap-1">
-                        <div
-                            class="h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]"
-                        >
-                            <div
-                                class="h-full bg-[var(--color-accent)] transition-all"
-                                style="width: {$resyncStore.total > 0
-                                    ? ($resyncStore.processed /
-                                          $resyncStore.total) *
-                                      100
-                                    : 0}%"
-                            ></div>
-                        </div>
-                        <span class="text-sm text-[var(--color-text-muted)]">
-                            {$resyncStore.processed} / {$resyncStore.total} songs
-                        </span>
-                    </div>
-                {/if}
-            </div>
         </section>
     {/if}
+
+    <section class="flex flex-col gap-3">
+        <button
+            onclick={handleLogout}
+            class="w-fit rounded-lg border border-red-200 px-3 py-2 text-sm text-red-500 hover:bg-red-50"
+        >
+            Log out
+        </button>
+    </section>
 </div>
 
 {#if showCreateUserModal}
@@ -407,6 +435,68 @@
                 </button>
             </div>
         </form>
+    </div>
+{/if}
+
+{#if confirmResetUser}
+    <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+    >
+        <div
+            class="flex w-80 flex-col gap-3 rounded-xl bg-[var(--color-surface)] p-6"
+        >
+            <h2 class="text-lg text-[var(--color-text-primary)]">
+                Reset password for {confirmResetUser.email}?
+            </h2>
+            <p class="text-sm text-[var(--color-text-muted)]">
+                A new temporary password will be generated.
+            </p>
+            <div class="flex justify-end gap-2">
+                <button
+                    onclick={() => (confirmResetUser = null)}
+                    class="rounded-lg px-3 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                >
+                    Cancel
+                </button>
+                <button
+                    onclick={confirmedResetUser}
+                    class="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm text-white hover:bg-[var(--color-accent-hover)]"
+                >
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if confirmDeleteUser}
+    <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+    >
+        <div
+            class="flex w-80 flex-col gap-3 rounded-xl bg-[var(--color-surface)] p-6"
+        >
+            <h2 class="text-lg text-[var(--color-text-primary)]">
+                Delete {confirmDeleteUser.email}?
+            </h2>
+            <p class="text-sm text-[var(--color-text-muted)]">
+                This permanently removes the account.
+            </p>
+            <div class="flex justify-end gap-2">
+                <button
+                    onclick={() => (confirmDeleteUser = null)}
+                    class="rounded-lg px-3 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                >
+                    Cancel
+                </button>
+                <button
+                    onclick={confirmedDeleteUser}
+                    class="rounded-lg bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"
+                >
+                    Delete
+                </button>
+            </div>
+        </div>
     </div>
 {/if}
 
@@ -475,7 +565,7 @@
                         </div>
                         <button
                             onclick={() => (confirmDeleteSong = song)}
-                            class="rounded-lg px-2 py-1.5 text-sm text-red-500 hover:bg-red-50"
+                            class="w-fit rounded-lg px-2 py-1.5 text-sm text-red-500 hover:bg-red-50"
                         >
                             Delete
                         </button>

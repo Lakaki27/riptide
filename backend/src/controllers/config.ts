@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthEnabled } from "../services/auth";
+import { getMinPasswordLength } from "../services/auth";
 
 const router = Router();
 

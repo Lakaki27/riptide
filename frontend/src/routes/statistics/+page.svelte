@@ -283,7 +283,7 @@
 
             <div
                 bind:this={scrollContainer}
-                class="scrollbar-hide overflow-x-auto rounded-xl bg-[var(--color-surface)] p-3 shadow-sm md:p-4"
+                class="scrollbar-hide overflow-x-auto rounded-xl bg-[var(--color-surface)] p-3 shadow-sm md:p-4 w-fit"
             >
                 {#if heatmapLoading}
                     <div

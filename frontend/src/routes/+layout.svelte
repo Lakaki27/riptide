@@ -14,7 +14,7 @@
     import DownloadToasts from "$lib/components/DownloadToasts.svelte";
     import "../app.css";
     import ActionToasts from "$lib/components/ActionToasts.svelte";
-    import { themeStore } from "$lib/stores/themes";
+    import { themeStore } from "$lib/stores/theme";
 
     let { children } = $props();
     let ready = $state(false);

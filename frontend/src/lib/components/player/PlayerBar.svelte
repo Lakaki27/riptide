@@ -29,7 +29,7 @@
     const track = $derived($playerStore.queue[$playerStore.currentIndex]);
 
     $effect(() => {
-        document.title = track ? `${track.title} — riptide` : "riptide";
+        document.title = track ? `${track.title} — Riptide` : "Riptide";
     });
 
     $effect(() => {
