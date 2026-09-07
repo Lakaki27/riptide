@@ -3,7 +3,6 @@
         "outDir": "./dist",
         "rootDir": "./src",
         "module": "commonjs",
-        "moduleResolution": "node",
         "target": "es2022",
         "types": ["node"],
         "experimentalDecorators": true,
