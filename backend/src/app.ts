@@ -11,6 +11,7 @@ import { searchRouter } from "./controllers/search";
 import { statsRouter } from "./controllers/stats";
 import { uploadRouter } from "./controllers/upload";
 import { requireAuth } from "./middleware/auth";
+import { consumeRouter } from "./controllers/consume";
 
 export const app = express();
 
@@ -32,3 +33,4 @@ app.use("/artists", requireAuth, artistRouter);
 app.use("/search", requireAuth, searchRouter);
 app.use("/stats", requireAuth, statsRouter);
 app.use("/library/resync", requireAuth, resyncRouter);
+app.use("/library/consume", requireAuth, consumeRouter);

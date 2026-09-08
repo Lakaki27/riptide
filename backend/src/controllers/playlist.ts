@@ -93,8 +93,10 @@ router.post("/:id", requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { songId } = req.body;
 
-    const playlist = await playlistRepository.findOne({ where: { id } });
-
+    const playlist = await playlistRepository.findOne({
+        where: { id },
+        relations: ["musics"],
+    });
     if (!playlist) {
         return res.status(404).json({ error: "Playlist not found" });
     }
@@ -105,11 +107,17 @@ router.post("/:id", requireAdmin, async (req, res) => {
         return res.status(404).json({ error: "Song not found" });
     }
 
+    const alreadyIn = playlist.musics.some((m) => m.id === songId);
+    if (alreadyIn) {
+        return res
+            .status(409)
+            .json({ error: "song is already in this playlist" });
+    }
+
     await AppDataSource.createQueryBuilder()
         .relation(Playlist, "musics")
         .of(id)
         .add(songId);
-
     return res.sendStatus(204);
 });
 

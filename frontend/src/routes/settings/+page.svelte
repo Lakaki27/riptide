@@ -7,6 +7,8 @@
     import { toastStore } from "$lib/stores/toast";
     import { resyncStore } from "$lib/stores/resync";
     import type { Music, PaginatedResponse } from "$lib/types";
+    import { setLocale } from "$lib/paraglide/runtime";
+    import { consumeStore } from "$lib/stores/consume";
 
     interface Me {
         id: string;
@@ -72,6 +74,7 @@
             method: "PATCH",
             body: JSON.stringify({ language: selectedLanguage }),
         });
+        setLocale(selectedLanguage as "en" | "fr");
         toastStore.show("Language updated");
     }
 
@@ -344,6 +347,15 @@
             <div
                 class="flex w-fit flex-wrap gap-3 rounded-xl bg-[var(--color-surface)] p-4 shadow-sm"
             >
+                <button
+                    onclick={() => consumeStore.start()}
+                    disabled={$consumeStore.running}
+                    class="w-fit rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
+                >
+                    {$consumeStore.running
+                        ? "Ingesting..."
+                        : "Ingest consume folder"}
+                </button>
                 <div class="flex flex-col gap-2">
                     <button
                         onclick={() => resyncStore.start()}

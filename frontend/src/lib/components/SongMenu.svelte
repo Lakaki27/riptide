@@ -93,11 +93,20 @@
         targetPlaylistId: string,
         playlistName: string,
     ) {
-        await apiFetch(`/playlists/${targetPlaylistId}`, {
-            method: "POST",
-            body: JSON.stringify({ songId: music.id }),
-        });
-        toastStore.show(`Added to ${playlistName}`);
+        try {
+            await apiFetch(`/playlists/${targetPlaylistId}`, {
+                method: "POST",
+                body: JSON.stringify({ songId: music.id }),
+            });
+            toastStore.show(`Added to ${playlistName}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "";
+            toastStore.show(
+                message.includes("already")
+                    ? `Already in ${playlistName}`
+                    : "Could not add song",
+            );
+        }
         close();
     }
 

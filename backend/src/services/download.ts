@@ -265,3 +265,34 @@ export function previewDownload(url: string): Promise<DownloadPreview> {
         });
     });
 }
+
+export function isValidDownloadUrl(url: string): boolean {
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return false;
+    }
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+        return false;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    const blockedHosts = ["localhost", "127.0.0.1", "0.0.0.0", "::1"];
+    if (blockedHosts.includes(hostname)) {
+        return false;
+    }
+
+    const privateRanges = [
+        /^10\./,
+        /^172\.(1[6-9]|2\d|3[01])\./,
+        /^192\.168\./,
+        /^169\.254\./,
+    ];
+    if (privateRanges.some((re) => re.test(hostname))) {
+        return false;
+    }
+
+    return true;
+}

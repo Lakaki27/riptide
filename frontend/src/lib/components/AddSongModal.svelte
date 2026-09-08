@@ -119,11 +119,18 @@
         }
 
         try {
-            await apiFetch("/uploads", {
-                method: "POST",
-                body: formData,
-                skipJsonContentType: true,
-            });
+            const { jobIds } = await apiFetch<{ jobIds: string[] }>(
+                "/uploads",
+                {
+                    method: "POST",
+                    body: formData,
+                    skipJsonContentType: true,
+                },
+            );
+
+            jobIds.forEach((jobId, i) =>
+                downloadsStore.trackExisting(jobId, selectedFiles[i].name),
+            );
             selectedFiles = [];
             onClose();
         } catch {

@@ -3,11 +3,20 @@ BACKEND_IMAGE := $(REGISTRY)/riptide-backend
 FRONTEND_IMAGE := $(REGISTRY)/riptide-frontend
 NIXOS_FLAKE_DIR := /home/leo/Codebase/Perso/maelstrom
 
+.PHONY: check check-back check-front lint lint-back lint-front test test-back test-front deploy build-images push-images
 
-.PHONY: deploy build-images push-images init test test-back test-front
+lint-back:
+	@docker compose exec backend npx biome ci .
 
-init:
-	@docker compose up -d --build
+lint-front:
+	@docker compose exec frontend npx biome ci .
+
+lint:
+	$(MAKE) lint-back
+	$(MAKE) lint-front
+
+check-front:
+	@docker compose exec frontend npm run check
 
 test-back:
 	@docker compose exec backend npm test
@@ -16,8 +25,13 @@ test-front:
 	@docker compose exec frontend npm run test
 
 test:
-	$(MAKE) test-back
 	$(MAKE) test-front
+	$(MAKE) test-back
+
+check:
+	$(MAKE) lint
+	$(MAKE) check-front
+	$(MAKE) test
 
 build-images:
 	docker build -f docker/backend/Dockerfile.prod -t $(BACKEND_IMAGE):latest ./backend

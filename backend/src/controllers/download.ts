@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { previewDownload, startDownloadJob } from "../services/download";
+import {
+    isValidDownloadUrl,
+    previewDownload,
+    startDownloadJob,
+} from "../services/download";
 import { getJobStatus } from "../services/job";
 import { requireAdmin } from "../middleware/auth";
 
@@ -7,8 +11,8 @@ const router = Router();
 
 router.post("/", requireAdmin, (req, res) => {
     const { url, title, artist } = req.body;
-    if (!url) {
-        return res.status(400).json({ error: "url is required" });
+    if (!url || typeof url !== "string" || !isValidDownloadUrl(url)) {
+        return res.status(400).json({ error: "a valid url is required" });
     }
     const jobId = startDownloadJob(url, { title, artist });
     res.status(202).json({ jobId });
@@ -27,12 +31,10 @@ router.get("/:jobId", (req, res) => {
     res.json(job);
 });
 
-export { router as downloadRouter };
-
-router.post("/preview", requireAdmin, async (req, res) => {
+router.post("/preview", async (req, res) => {
     const { url } = req.body;
-    if (!url) {
-        return res.status(400).json({ error: "url is required" });
+    if (!url || typeof url !== "string" || !isValidDownloadUrl(url)) {
+        return res.status(400).json({ error: "a valid url is required" });
     }
     try {
         const preview = await previewDownload(url);
@@ -43,3 +45,5 @@ router.post("/preview", requireAdmin, async (req, res) => {
         });
     }
 });
+
+export { router as downloadRouter };

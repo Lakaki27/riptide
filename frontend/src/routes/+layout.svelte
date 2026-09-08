@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Pathname } from "$app/types";
     import { resolve } from "$app/paths";
-    import { locales, localizeHref } from "$lib/paraglide/runtime";
+    import { locales, localizeHref, setLocale } from "$lib/paraglide/runtime";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import { page } from "$app/state";
@@ -24,7 +24,6 @@
             "/config",
             { skipAuth: true },
         );
-
         authStore.setAuthEnabled(authEnabled);
 
         const auth = $authStore;
@@ -34,6 +33,18 @@
         }
 
         themeStore.init();
+
+        if (auth.accessToken) {
+            try {
+                const me = await apiFetch<{ theme: string; language: string }>(
+                    "/auth/me",
+                );
+                themeStore.set(me.theme as "light" | "dark" | "system");
+                setLocale(me.language as "en" | "fr");
+            } catch {
+                // handled by apiFetch's own redirect-on-failed-refresh
+            }
+        }
 
         ready = true;
     });
@@ -46,7 +57,6 @@
         <div class="flex h-screen flex-col bg-violet-50 text-neutral-900">
             <div class="flex flex-1 overflow-hidden">
                 <div class="hidden md:flex"><Sidebar /></div>
-
                 <main class="flex-1 overflow-y-auto p-4 md:p-6">
                     {#key page.url.pathname}
                         <div
@@ -57,19 +67,15 @@
                         </div>
                     {/key}
                 </main>
-
                 <QueuePanel />
             </div>
-
             <PlayerBar />
             <div class="md:hidden"><Sidebar /></div>
         </div>
-
         <DownloadToasts />
         <ActionToasts />
     {/if}
 {/if}
-
 <div style="display:none">
     {#each locales as locale (locale)}
         <a

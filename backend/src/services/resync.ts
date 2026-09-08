@@ -139,9 +139,8 @@ async function processResyncJob(
                 : 0;
             const audioInfo = await probeAudioFile(localPath);
 
-            const title = tags.title ?? musicId;
-            const artistName = tags.artist ?? "Unknown Artist";
-            const artist = await findOrCreateArtist(artistName);
+            const probedTitle = tags.title;
+            const probedArtist = tags.artist;
 
             const thumbnailKey = `thumbnails/${musicId}.jpg`;
             let finalThumbnailKey = "";
@@ -170,8 +169,12 @@ async function processResyncJob(
             });
 
             if (existingRow) {
-                existingRow.title = title;
-                existingRow.artist = artist;
+                if (probedTitle) {
+                    existingRow.title = probedTitle;
+                }
+                if (probedArtist) {
+                    existingRow.artist = await findOrCreateArtist(probedArtist);
+                }
                 existingRow.durationSeconds = Math.round(duration);
                 existingRow.fileKey = key;
                 existingRow.codec = audioInfo.codec ?? undefined;
@@ -183,6 +186,10 @@ async function processResyncJob(
                 }
                 await musicRepository.save(existingRow);
             } else {
+                const title = probedTitle ?? musicId;
+                const artistName = probedArtist ?? "Unknown Artist";
+                const artist = await findOrCreateArtist(artistName);
+
                 const music = musicRepository.create({
                     id: musicId,
                     title,

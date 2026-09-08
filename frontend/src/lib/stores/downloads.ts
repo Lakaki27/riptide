@@ -11,10 +11,10 @@ interface DownloadJob {
 function createDownloadsStore() {
     const { subscribe, update } = writable<DownloadJob[]>([]);
 
-    async function poll(jobId: string) {
+    async function poll(jobId: string, kind: "download" | "upload") {
         try {
             const job = await apiFetch<{ status: string; error?: string }>(
-                `/downloads/${jobId}`,
+                `/${kind}s/${jobId}`,
             );
 
             update((jobs) =>
@@ -67,6 +67,13 @@ function createDownloadsStore() {
         },
         dismiss(jobId: string) {
             update((jobs) => jobs.filter((j) => j.id !== jobId));
+        },
+        trackExisting(jobId: string, label: string) {
+            update((jobs) => [
+                ...jobs,
+                { id: jobId, url: label, status: "downloading" },
+            ]);
+            poll(jobId);
         },
     };
 }
