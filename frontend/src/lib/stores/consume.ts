@@ -39,10 +39,9 @@ function createConsumeStore() {
     return {
         subscribe,
         async start() {
-            const { jobId } = await apiFetch<{ jobId: string }>(
-                "/library/consume",
-                { method: "POST" },
-            );
+            const { jobId } = await apiFetch<{ jobId: string }>("/library/consume", {
+                method: "POST",
+            });
             set({ running: true, processed: 0, total: 0 });
             poll(jobId);
         },

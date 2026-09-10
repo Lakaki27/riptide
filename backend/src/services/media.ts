@@ -1,13 +1,12 @@
+import { spawn } from "node:child_process";
 import { createReadStream } from "node:fs";
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AppDataSource } from "../data-source";
 import { Artist } from "../entities/Artist";
 import { Music } from "../entities/Music";
 import { requireEnv } from "../env";
 import { s3Client, s3PublicClient } from "./storage";
-import { spawn } from "node:child_process";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 interface AudioProbeResult {
     codec: string | null;
@@ -51,11 +50,8 @@ export function probeAudioFile(filePath: string): Promise<AudioProbeResult> {
                 const sampleRateHz = audioStream?.sample_rate
                     ? Number(audioStream.sample_rate)
                     : null;
-                const bitRateRaw =
-                    parsed.format?.bit_rate ?? audioStream?.bit_rate;
-                const bitrateKbps = bitRateRaw
-                    ? Math.round(Number(bitRateRaw) / 1000)
-                    : null;
+                const bitRateRaw = parsed.format?.bit_rate ?? audioStream?.bit_rate;
+                const bitrateKbps = bitRateRaw ? Math.round(Number(bitRateRaw) / 1000) : null;
                 resolve({ codec, bitrateKbps, sampleRateHz });
             } catch {
                 resolve({ codec: null, bitrateKbps: null, sampleRateHz: null });
@@ -118,19 +114,16 @@ export async function persistMusic(input: PersistMusicInput): Promise<Music> {
         durationSeconds: Math.round(input.durationSeconds),
         fileKey: input.fileKey,
         thumbnailKey: input.thumbnailKey,
-        codec: input.codec ?? undefined,
-        bitrateKbps: input.bitrateKbps ?? undefined,
-        sampleRateHz: input.sampleRateHz ?? undefined,
+        ...(input.codec != null ? { codec: input.codec } : {}),
+        ...(input.bitrateKbps != null ? { bitrateKbps: input.bitrateKbps } : {}),
+        ...(input.sampleRateHz != null ? { sampleRateHz: input.sampleRateHz } : {}),
     });
 
     await musicRepository.save(music);
     return music;
 }
 
-export async function getPresignedUrl(
-    key: string,
-    expiresInSeconds = 900,
-): Promise<string> {
+export async function getPresignedUrl(key: string, expiresInSeconds = 900): Promise<string> {
     const command = new GetObjectCommand({
         Bucket: requireEnv("S3_BUCKET"),
         Key: key,
@@ -152,9 +145,7 @@ interface MusicWithThumbnail {
     sampleRateHz: number | null;
 }
 
-export async function withThumbnailUrl(
-    music: Music,
-): Promise<MusicWithThumbnail> {
+export async function withThumbnailUrl(music: Music): Promise<MusicWithThumbnail> {
     const thumbnailUrl = music.thumbnailKey
         ? await getPresignedUrl(music.thumbnailKey, 3600)
         : null;
@@ -173,7 +164,5 @@ export async function withThumbnailUrl(
 }
 
 export async function deleteFile(key: string): Promise<void> {
-    await s3Client.send(
-        new DeleteObjectCommand({ Bucket: requireEnv("S3_BUCKET"), Key: key }),
-    );
+    await s3Client.send(new DeleteObjectCommand({ Bucket: requireEnv("S3_BUCKET"), Key: key }));
 }

@@ -3,6 +3,7 @@ import "reflect-metadata";
 import { artistRouter } from "./controllers/artist";
 import { authRouter } from "./controllers/auth";
 import { configRouter } from "./controllers/config";
+import { consumeRouter } from "./controllers/consume";
 import { downloadRouter } from "./controllers/download";
 import { musicRouter } from "./controllers/music";
 import { playlistRouter } from "./controllers/playlist";
@@ -11,7 +12,6 @@ import { searchRouter } from "./controllers/search";
 import { statsRouter } from "./controllers/stats";
 import { uploadRouter } from "./controllers/upload";
 import { requireAuth } from "./middleware/auth";
-import { consumeRouter } from "./controllers/consume";
 
 export const app = express();
 

@@ -91,10 +91,7 @@ export interface LoginResult {
     refreshToken?: string;
 }
 
-export async function loginUser(
-    email: string,
-    password: string,
-): Promise<LoginResult> {
+export async function loginUser(email: string, password: string): Promise<LoginResult> {
     const user = await userRepository.findOne({ where: { email } });
     if (!user) {
         throw new Error("invalid credentials");
@@ -248,8 +245,7 @@ export async function adminDeleteUser(
     const user = await userRepository.findOne({ where: { id: targetUserId } });
     if (!user) throw new Error("user not found");
     if (user.isProtected) throw new Error("this account cannot be deleted");
-    if (user.id === requestingUserId)
-        throw new Error("you cannot delete your own account");
+    if (user.id === requestingUserId) throw new Error("you cannot delete your own account");
     await userRepository.delete(targetUserId);
 }
 

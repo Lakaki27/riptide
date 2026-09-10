@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AppDataSource } from "../data-source";
 import { Music } from "../entities/Music";
 import { PlayEvent } from "../entities/PlayEvent";
-import { User } from "../entities/User";
+import type { User } from "../entities/User";
 
 const musicRepository = AppDataSource.getRepository(Music);
 const playEventRepository = AppDataSource.getRepository(PlayEvent);
@@ -19,7 +19,7 @@ router.post("/plays", async (req, res) => {
     const userId = req.user?.sub;
     const playEvent = playEventRepository.create({
         music,
-        user: userId ? ({ id: userId } as User) : undefined,
+        ...(userId ? { user: { id: userId } as User } : {}),
     });
     await playEventRepository.save(playEvent);
 
@@ -88,15 +88,11 @@ router.get("/summary", async (_req, res) => {
 
 router.get("/heatmap", async (req, res) => {
     const scope = req.query.scope === "me" ? "me" : "global";
-    const startDate =
-        typeof req.query.startDate === "string" ? req.query.startDate : null;
-    const endDate =
-        typeof req.query.endDate === "string" ? req.query.endDate : null;
+    const startDate = typeof req.query.startDate === "string" ? req.query.startDate : null;
+    const endDate = typeof req.query.endDate === "string" ? req.query.endDate : null;
 
     if (!startDate || !endDate) {
-        return res
-            .status(400)
-            .json({ error: "startDate and endDate are required" });
+        return res.status(400).json({ error: "startDate and endDate are required" });
     }
 
     const qb = playEventRepository

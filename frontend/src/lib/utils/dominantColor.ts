@@ -1,6 +1,4 @@
-export async function getDominantColor(
-    imageUrl: string,
-): Promise<string | null> {
+export async function getDominantColor(imageUrl: string): Promise<string | null> {
     return new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = "anonymous";

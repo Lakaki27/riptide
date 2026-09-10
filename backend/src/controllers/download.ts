@@ -1,11 +1,7 @@
 import { Router } from "express";
-import {
-    isValidDownloadUrl,
-    previewDownload,
-    startDownloadJob,
-} from "../services/download";
-import { getJobStatus } from "../services/job";
 import { requireAdmin } from "../middleware/auth";
+import { isValidDownloadUrl, previewDownload, startDownloadJob } from "../services/download";
+import { getJobStatus } from "../services/job";
 
 const router = Router();
 

@@ -1,206 +1,192 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { goto } from "$app/navigation";
-    import { apiFetch } from "$lib/api";
-    import { authStore } from "$lib/stores/auth";
-    import { themeStore } from "$lib/stores/theme";
-    import { toastStore } from "$lib/stores/toast";
-    import { resyncStore } from "$lib/stores/resync";
-    import type { Music, PaginatedResponse } from "$lib/types";
-    import { setLocale } from "$lib/paraglide/runtime";
-    import { consumeStore } from "$lib/stores/consume";
+import { onMount } from "svelte";
+import { goto } from "$app/navigation";
+import { apiFetch } from "$lib/api";
+import { setLocale } from "$lib/paraglide/runtime";
+import { authStore } from "$lib/stores/auth";
+import { consumeStore } from "$lib/stores/consume";
+import { resyncStore } from "$lib/stores/resync";
+import { themeStore } from "$lib/stores/theme";
+import { toastStore } from "$lib/stores/toast";
+import type { Music, PaginatedResponse } from "$lib/types";
 
-    interface Me {
-        id: string;
-        email: string;
-        role: "admin" | "user";
-        theme: string;
-        language: string;
-    }
+interface Me {
+    id: string;
+    email: string;
+    role: "admin" | "user";
+    theme: string;
+    language: string;
+}
 
-    interface AdminUser {
-        id: string;
-        email: string;
-        role: "admin" | "user";
-        mustResetPassword: boolean;
-        createdAt: string;
-    }
+interface AdminUser {
+    id: string;
+    email: string;
+    role: "admin" | "user";
+    mustResetPassword: boolean;
+    createdAt: string;
+}
 
-    const isAdmin = $derived($authStore.role === "admin");
+const isAdmin = $derived($authStore.role === "admin");
 
-    let me = $state<Me | null>(null);
-    let selectedTheme = $state<"light" | "dark" | "system">("system");
-    let selectedLanguage = $state("en");
+let me = $state<Me | null>(null);
+let selectedTheme = $state<"light" | "dark" | "system">("system");
+let selectedLanguage = $state("en");
 
-    let currentPassword = $state("");
-    let newPassword = $state("");
-    let confirmPassword = $state("");
-    let passwordError = $state("");
-    let minPasswordLength = $state(0);
+let currentPassword = $state("");
+let newPassword = $state("");
+let confirmPassword = $state("");
+let passwordError = $state("");
+let minPasswordLength = $state(0);
 
-    let users = $state<AdminUser[]>([]);
-    let showCreateUserModal = $state(false);
-    let newUserEmail = $state("");
-    let newUserRole = $state<"admin" | "user">("user");
-    let credentialModal = $state<{ email: string; password: string } | null>(
-        null,
-    );
+let users = $state<AdminUser[]>([]);
+let showCreateUserModal = $state(false);
+let newUserEmail = $state("");
+let newUserRole = $state<"admin" | "user">("user");
+let credentialModal = $state<{ email: string; password: string } | null>(null);
 
-    let confirmDeleteUser = $state<AdminUser | null>(null);
-    let confirmResetUser = $state<AdminUser | null>(null);
+let confirmDeleteUser = $state<AdminUser | null>(null);
+let confirmResetUser = $state<AdminUser | null>(null);
 
-    let showDeleteSongModal = $state(false);
-    let songQuery = $state("");
-    let songResults = $state<Music[]>([]);
-    let confirmDeleteSong = $state<Music | null>(null);
+let showDeleteSongModal = $state(false);
+let songQuery = $state("");
+let songResults = $state<Music[]>([]);
+let confirmDeleteSong = $state<Music | null>(null);
 
-    async function loadMe() {
-        me = await apiFetch<Me>("/auth/me");
-        selectedTheme = (me.theme as "light" | "dark" | "system") ?? "system";
-        selectedLanguage = me.language;
-    }
+async function loadMe() {
+    me = await apiFetch<Me>("/auth/me");
+    selectedTheme = (me.theme as "light" | "dark" | "system") ?? "system";
+    selectedLanguage = me.language;
+}
 
-    async function saveTheme() {
-        themeStore.set(selectedTheme);
-        await apiFetch("/auth/me", {
-            method: "PATCH",
-            body: JSON.stringify({ theme: selectedTheme }),
-        });
-        toastStore.show("Theme updated");
-    }
-
-    async function saveLanguage() {
-        await apiFetch("/auth/me", {
-            method: "PATCH",
-            body: JSON.stringify({ language: selectedLanguage }),
-        });
-        setLocale(selectedLanguage as "en" | "fr");
-        toastStore.show("Language updated");
-    }
-
-    async function handleChangePassword(e: Event) {
-        e.preventDefault();
-        passwordError = "";
-
-        if (minPasswordLength > 0 && newPassword.length < minPasswordLength) {
-            passwordError = `New password must be at least ${minPasswordLength} characters`;
-            return;
-        }
-        if (newPassword !== confirmPassword) {
-            passwordError = "Passwords do not match";
-            return;
-        }
-
-        try {
-            await apiFetch("/auth/change-password", {
-                method: "POST",
-                body: JSON.stringify({ currentPassword, newPassword }),
-            });
-            currentPassword = "";
-            newPassword = "";
-            confirmPassword = "";
-            toastStore.show("Password changed");
-        } catch (err) {
-            passwordError =
-                err instanceof Error
-                    ? err.message
-                    : "Failed to change password";
-        }
-    }
-
-    async function loadUsers() {
-        if (!isAdmin) return;
-        const data = await apiFetch<{ results: AdminUser[] }>("/auth/users");
-        users = data.results;
-    }
-
-    async function handleCreateUser(e: Event) {
-        e.preventDefault();
-        const result = await apiFetch<{ email: string; password: string }>(
-            "/auth/users",
-            {
-                method: "POST",
-                body: JSON.stringify({
-                    email: newUserEmail,
-                    role: newUserRole,
-                }),
-            },
-        );
-        credentialModal = { email: result.email, password: result.password };
-        newUserEmail = "";
-        newUserRole = "user";
-        showCreateUserModal = false;
-        await loadUsers();
-    }
-
-    async function confirmedResetUser() {
-        if (!confirmResetUser) return;
-        try {
-            const result = await apiFetch<{ password: string }>(
-                `/auth/users/${confirmResetUser.id}/reset-password`,
-                { method: "POST" },
-            );
-            credentialModal = {
-                email: confirmResetUser.email,
-                password: result.password,
-            };
-            await loadUsers();
-        } catch (err) {
-            toastStore.show(
-                err instanceof Error ? err.message : "Could not reset password",
-            );
-        }
-        confirmResetUser = null;
-    }
-
-    async function confirmedDeleteUser() {
-        if (!confirmDeleteUser) return;
-        try {
-            await apiFetch(`/auth/users/${confirmDeleteUser.id}`, {
-                method: "DELETE",
-            });
-            toastStore.show("User deleted");
-            await loadUsers();
-        } catch (err) {
-            toastStore.show(
-                err instanceof Error ? err.message : "Could not delete user",
-            );
-        }
-        confirmDeleteUser = null;
-    }
-
-    async function searchSongsToDelete() {
-        if (!songQuery.trim()) {
-            songResults = [];
-            return;
-        }
-        const data = await apiFetch<PaginatedResponse<Music>>(
-            `/search?type=music&q=${encodeURIComponent(songQuery)}`,
-        );
-        songResults = data.results;
-    }
-
-    async function handleDeleteSong() {
-        if (!confirmDeleteSong) return;
-        await apiFetch(`/musics/${confirmDeleteSong.id}`, { method: "DELETE" });
-        toastStore.show("Song deleted");
-        songResults = songResults.filter((m) => m.id !== confirmDeleteSong!.id);
-        confirmDeleteSong = null;
-    }
-
-    function handleLogout() {
-        authStore.clear();
-        goto("/auth");
-    }
-
-    onMount(async () => {
-        const policy = await apiFetch<{ minLength: number }>(
-            "/auth/password-policy",
-        );
-        minPasswordLength = policy.minLength;
-        await loadMe();
-        await loadUsers();
+async function saveTheme() {
+    themeStore.set(selectedTheme);
+    await apiFetch("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({ theme: selectedTheme }),
     });
+    toastStore.show("Theme updated");
+}
+
+async function saveLanguage() {
+    await apiFetch("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({ language: selectedLanguage }),
+    });
+    setLocale(selectedLanguage as "en" | "fr");
+    toastStore.show("Language updated");
+}
+
+async function handleChangePassword(e: Event) {
+    e.preventDefault();
+    passwordError = "";
+
+    if (minPasswordLength > 0 && newPassword.length < minPasswordLength) {
+        passwordError = `New password must be at least ${minPasswordLength} characters`;
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+        passwordError = "Passwords do not match";
+        return;
+    }
+
+    try {
+        await apiFetch("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({ currentPassword, newPassword }),
+        });
+        currentPassword = "";
+        newPassword = "";
+        confirmPassword = "";
+        toastStore.show("Password changed");
+    } catch (err) {
+        passwordError = err instanceof Error ? err.message : "Failed to change password";
+    }
+}
+
+async function loadUsers() {
+    if (!isAdmin) return;
+    const data = await apiFetch<{ results: AdminUser[] }>("/auth/users");
+    users = data.results;
+}
+
+async function handleCreateUser(e: Event) {
+    e.preventDefault();
+    const result = await apiFetch<{ email: string; password: string }>("/auth/users", {
+        method: "POST",
+        body: JSON.stringify({
+            email: newUserEmail,
+            role: newUserRole,
+        }),
+    });
+    credentialModal = { email: result.email, password: result.password };
+    newUserEmail = "";
+    newUserRole = "user";
+    showCreateUserModal = false;
+    await loadUsers();
+}
+
+async function confirmedResetUser() {
+    if (!confirmResetUser) return;
+    try {
+        const result = await apiFetch<{ password: string }>(
+            `/auth/users/${confirmResetUser.id}/reset-password`,
+            { method: "POST" },
+        );
+        credentialModal = {
+            email: confirmResetUser.email,
+            password: result.password,
+        };
+        await loadUsers();
+    } catch (err) {
+        toastStore.show(err instanceof Error ? err.message : "Could not reset password");
+    }
+    confirmResetUser = null;
+}
+
+async function confirmedDeleteUser() {
+    if (!confirmDeleteUser) return;
+    try {
+        await apiFetch(`/auth/users/${confirmDeleteUser.id}`, {
+            method: "DELETE",
+        });
+        toastStore.show("User deleted");
+        await loadUsers();
+    } catch (err) {
+        toastStore.show(err instanceof Error ? err.message : "Could not delete user");
+    }
+    confirmDeleteUser = null;
+}
+
+async function searchSongsToDelete() {
+    if (!songQuery.trim()) {
+        songResults = [];
+        return;
+    }
+    const data = await apiFetch<PaginatedResponse<Music>>(
+        `/search?type=music&q=${encodeURIComponent(songQuery)}`,
+    );
+    songResults = data.results;
+}
+
+async function handleDeleteSong() {
+    if (!confirmDeleteSong) return;
+    await apiFetch(`/musics/${confirmDeleteSong.id}`, { method: "DELETE" });
+    toastStore.show("Song deleted");
+    songResults = songResults.filter((m) => m.id !== confirmDeleteSong!.id);
+    confirmDeleteSong = null;
+}
+
+function handleLogout() {
+    authStore.clear();
+    goto("/auth");
+}
+
+onMount(async () => {
+    const policy = await apiFetch<{ minLength: number }>("/auth/password-policy");
+    minPasswordLength = policy.minLength;
+    await loadMe();
+    await loadUsers();
+});
 </script>
 
 <div class="flex flex-col gap-8">
@@ -310,9 +296,9 @@
             >
                 {#each users as user}
                     <div class="flex items-center gap-3 rounded-lg px-3 py-2">
-                        <div class="flex flex-1 flex-col">
+                        <div class="flex min-w-0 flex-1 flex-col">
                             <span
-                                class="text-sm text-[var(--color-text-primary)]"
+                                class="truncate text-sm text-[var(--color-text-primary)]"
                                 >{user.email}</span
                             >
                             <span
@@ -325,13 +311,13 @@
                         </div>
                         <button
                             onclick={() => (confirmResetUser = user)}
-                            class="w-fit rounded-lg px-2 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                            class="w-fit shrink-0 rounded-lg px-2 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
                         >
                             Reset password
                         </button>
                         <button
                             onclick={() => (confirmDeleteUser = user)}
-                            class="w-fit rounded-lg px-2 py-1.5 text-sm text-red-500 hover:bg-red-50"
+                            class="w-fit shrink-0 rounded-lg px-2 py-1.5 text-sm text-red-500 hover:bg-red-50"
                         >
                             Delete
                         </button>
@@ -526,8 +512,10 @@
             <div
                 class="flex flex-col gap-1 rounded-lg border border-[var(--color-border)] p-3 text-sm"
             >
-                <span><strong>Email:</strong> {credentialModal.email}</span>
-                <span
+                <span class="break-all"
+                    ><strong>Email:</strong> {credentialModal.email}</span
+                >
+                <span class="break-all"
                     ><strong>Password:</strong> {credentialModal.password}</span
                 >
             </div>

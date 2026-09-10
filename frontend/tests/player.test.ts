@@ -1,18 +1,22 @@
-import { describe, expect, it, beforeEach, vi } from "vitest";
 import { get } from "svelte/store";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("$lib/api", () => ({
-    apiFetch: vi
-        .fn()
-        .mockResolvedValue({ url: "http://example.com/track.ogg" }),
+    apiFetch: vi.fn().mockResolvedValue({ url: "http://example.com/track.ogg" }),
 }));
 
 import { playerStore } from "../src/lib/stores/player";
 
-const track = (id: string) => ({
+import type { Music } from "../src/lib/types";
+
+const track = (id: string): Music => ({
     id,
     title: `Song ${id}`,
-    artist: { id: "a1", name: "Artist" },
+    artist: {
+        id: "a1",
+        name: "Artist",
+        createdAt: "",
+    },
     durationSeconds: 100,
     createdAt: "",
     thumbnailUrl: null,
@@ -30,33 +34,18 @@ describe("playerStore", () => {
         const t = track("1");
         playerStore.addToQueue(t);
         playerStore.addToQueue(t);
-        expect(get(playerStore).queue.filter((x) => x.id === "1")).toHaveLength(
-            1,
-        );
+        expect(get(playerStore).queue.filter((x) => x.id === "1")).toHaveLength(1);
     });
 
     it("cycles through modes without landing on an invalid index", () => {
         const modes: string[] = [];
         for (let i = 0; i < 5; i++) {
             playerStore.setMode(
-                (
-                    [
-                        "normal",
-                        "loop-song",
-                        "loop-playlist",
-                        "randomize",
-                    ] as const
-                )[i % 4],
+                (["normal", "loop-song", "loop-playlist", "randomize"] as const)[i % 4],
             );
             modes.push(get(playerStore).mode);
         }
-        expect(modes).toEqual([
-            "normal",
-            "loop-song",
-            "loop-playlist",
-            "randomize",
-            "normal",
-        ]);
+        expect(modes).toEqual(["normal", "loop-song", "loop-playlist", "randomize", "normal"]);
     });
 
     it("playNext inserts a track right after the current one without losing currentIndex", async () => {

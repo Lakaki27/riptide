@@ -1,32 +1,32 @@
 import { nanoid } from "nanoid";
 import {
-	BeforeInsert,
-	Column,
-	CreateDateColumn,
-	Entity,
-	JoinTable,
-	ManyToMany,
-	PrimaryColumn,
+    BeforeInsert,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinTable,
+    ManyToMany,
+    PrimaryColumn,
 } from "typeorm";
 import { Music } from "./Music";
 
 @Entity()
 export class Playlist {
-	@PrimaryColumn({ type: "varchar", length: 12 })
-	id!: string;
+    @PrimaryColumn({ type: "varchar", length: 12 })
+    id!: string;
 
-	@Column({ type: "varchar" })
-	name!: string;
+    @Column({ type: "varchar" })
+    name!: string;
 
-	@ManyToMany(() => Music)
-	@JoinTable()
-	musics!: Music[];
+    @ManyToMany(() => Music)
+    @JoinTable()
+    musics!: Music[];
 
-	@CreateDateColumn()
-	createdAt!: Date;
+    @CreateDateColumn()
+    createdAt!: Date;
 
-	@BeforeInsert()
-	generateId() {
-		this.id = nanoid(12);
-	}
+    @BeforeInsert()
+    generateId() {
+        this.id = nanoid(12);
+    }
 }

@@ -1,37 +1,37 @@
 <script lang="ts">
-    import MusicRow from "$lib/components/MusicRow.svelte";
-    import { playerStore } from "$lib/stores/player";
-    import type { Music } from "$lib/types";
+import MusicRow from "$lib/components/MusicRow.svelte";
+import { playerStore } from "$lib/stores/player";
+import type { Music } from "$lib/types";
 
-    interface Props {
-        musics: Music[];
-        playlistId?: string;
-        onRemoved?: () => void;
-        activeIndex?: number;
-        compact?: boolean;
-        showMenu?: boolean;
-        onPlay?: (index: number) => void;
-        onTitleNavigate?: (music: Music) => void;
+interface Props {
+    musics: Music[];
+    playlistId?: string;
+    onRemoved?: () => void;
+    activeIndex?: number;
+    compact?: boolean;
+    showMenu?: boolean;
+    onPlay?: (index: number) => void;
+    onTitleNavigate?: (music: Music) => void;
+}
+
+let {
+    musics,
+    playlistId,
+    onRemoved,
+    activeIndex = -1,
+    compact = false,
+    showMenu = true,
+    onPlay,
+    onTitleNavigate,
+}: Props = $props();
+
+function handlePlay(index: number) {
+    if (onPlay) {
+        onPlay(index);
+    } else {
+        playerStore.setQueue(musics, index);
     }
-
-    let {
-        musics,
-        playlistId,
-        onRemoved,
-        activeIndex = -1,
-        compact = false,
-        showMenu = true,
-        onPlay,
-        onTitleNavigate,
-    }: Props = $props();
-
-    function handlePlay(index: number) {
-        if (onPlay) {
-            onPlay(index);
-        } else {
-            playerStore.setQueue(musics, index);
-        }
-    }
+}
 </script>
 
 <div class="flex flex-col gap-1">

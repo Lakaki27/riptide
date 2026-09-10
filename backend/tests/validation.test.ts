@@ -1,9 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app";
 import { AppDataSource } from "../src/data-source";
-import { registerUser } from "../src/services/auth";
 import { User } from "../src/entities/User";
+import { registerUser } from "../src/services/auth";
 
 describe("input validation", () => {
     let adminToken: string;

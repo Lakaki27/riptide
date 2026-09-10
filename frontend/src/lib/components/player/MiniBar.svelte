@@ -1,116 +1,103 @@
 <script lang="ts">
-    import { playerStore } from "$lib/stores/player";
-    import type { Music } from "$lib/types";
+import { playerStore } from "$lib/stores/player";
+import type { Music } from "$lib/types";
 
-    interface Props {
-        track: Music;
-        currentTime: number;
-        isPlaying: boolean;
-        expanded: boolean;
-        audioEl: HTMLAudioElement;
-        togglePlayback: () => void;
-        setExpanded: (value: boolean) => void;
-    }
+interface Props {
+    track: Music;
+    currentTime: number;
+    isPlaying: boolean;
+    expanded: boolean;
+    audioEl: HTMLAudioElement;
+    togglePlayback: () => void;
+    setExpanded: (value: boolean) => void;
+}
 
-    let {
-        track,
-        currentTime,
-        isPlaying,
-        expanded,
-        audioEl,
-        togglePlayback,
-        setExpanded,
-    }: Props = $props();
+let { track, currentTime, isPlaying, expanded, audioEl, togglePlayback, setExpanded }: Props =
+    $props();
 
-    let titleEl: HTMLElement;
-    let titleContainerEl: HTMLElement;
-    let titleOverflows = $state(false);
-    let volume = $state(1);
-    let showVolumeSlider = $state(false);
-    let dragStartY = $state<number | null>(null);
-    let dragOffsetY = $state(0);
-    let dragging = $state(false);
+let titleEl: HTMLElement;
+let titleContainerEl: HTMLElement;
+let titleOverflows = $state(false);
+let volume = $state(1);
+let showVolumeSlider = $state(false);
+let dragStartY = $state<number | null>(null);
+let dragOffsetY = $state(0);
+let dragging = $state(false);
 
-    $effect(() => {
-        track;
-        titleOverflows = false;
-        queueMicrotask(() => {
-            if (titleEl && titleContainerEl) {
-                titleOverflows =
-                    titleEl.scrollWidth > titleContainerEl.clientWidth;
-            }
-        });
+$effect(() => {
+    track;
+    titleOverflows = false;
+    queueMicrotask(() => {
+        if (titleEl && titleContainerEl) {
+            titleOverflows = titleEl.scrollWidth > titleContainerEl.clientWidth;
+        }
     });
+});
 
-    $effect(() => {
-        const stored = localStorage.getItem("riptide-volume");
-        if (stored !== null) volume = Number(stored);
-    });
+$effect(() => {
+    const stored = localStorage.getItem("riptide-volume");
+    if (stored !== null) volume = Number(stored);
+});
 
-    $effect(() => {
-        if (audioEl) audioEl.volume = volume;
-        localStorage.setItem("riptide-volume", String(volume));
-    });
+$effect(() => {
+    if (audioEl) audioEl.volume = volume;
+    localStorage.setItem("riptide-volume", String(volume));
+});
 
-    function formatTime(seconds: number): string {
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return `${m}:${s.toString().padStart(2, "0")}`;
-    }
+function formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
-    function volumeIcon(): string {
-        if (volume === 0) return "bx-volume-mute";
-        if (volume < 0.5) return "bx-volume-low";
-        return "bx-volume-full";
-    }
+function volumeIcon(): string {
+    if (volume === 0) return "bx-volume-mute";
+    if (volume < 0.5) return "bx-volume-low";
+    return "bx-volume-full";
+}
 
-    const modeOrder = [
-        "normal",
-        "loop-song",
-        "loop-playlist",
-        "randomize",
-    ] as const;
+const modeOrder = ["normal", "loop-song", "loop-playlist", "randomize"] as const;
 
-    const modeIcon: Record<(typeof modeOrder)[number], string> = {
-        normal: "bx-music",
-        "loop-song": "bx-rotate-right",
-        "loop-playlist": "bx-repeat",
-        randomize: "bx-shuffle",
-    };
+const modeIcon: Record<(typeof modeOrder)[number], string> = {
+    normal: "bx-music",
+    "loop-song": "bx-rotate-right",
+    "loop-playlist": "bx-repeat",
+    randomize: "bx-shuffle",
+};
 
-    const modeLabel: Record<(typeof modeOrder)[number], string> = {
-        normal: "Play through",
-        "loop-song": "Loop this song",
-        "loop-playlist": "Loop playlist",
-        randomize: "Shuffle",
-    };
+const modeLabel: Record<(typeof modeOrder)[number], string> = {
+    normal: "Play through",
+    "loop-song": "Loop this song",
+    "loop-playlist": "Loop playlist",
+    randomize: "Shuffle",
+};
 
-    function cycleMode() {
-        const currentIndex = modeOrder.indexOf($playerStore.mode);
-        playerStore.setMode(modeOrder[(currentIndex + 1) % modeOrder.length]);
-    }
+function cycleMode() {
+    const currentIndex = modeOrder.indexOf($playerStore.mode);
+    playerStore.setMode(modeOrder[(currentIndex + 1) % modeOrder.length]);
+}
 
-    function stop(e: Event) {
-        e.stopPropagation();
-    }
+function stop(e: Event) {
+    e.stopPropagation();
+}
 
-    function onTouchStart(e: TouchEvent) {
-        dragStartY = e.touches[0].clientY;
-        dragging = true;
-    }
+function onTouchStart(e: TouchEvent) {
+    dragStartY = e.touches[0].clientY;
+    dragging = true;
+}
 
-    function onTouchMove(e: TouchEvent) {
-        if (dragStartY === null) return;
-        const delta = e.touches[0].clientY - dragStartY;
-        if (delta < 0) dragOffsetY = delta;
-    }
+function onTouchMove(e: TouchEvent) {
+    if (dragStartY === null) return;
+    const delta = e.touches[0].clientY - dragStartY;
+    if (delta < 0) dragOffsetY = delta;
+}
 
-    function onTouchEnd() {
-        dragging = false;
-        if (dragOffsetY < -50) setExpanded(true);
-        dragOffsetY = 0;
-        dragStartY = null;
-    }
+function onTouchEnd() {
+    dragging = false;
+    if (dragOffsetY < -50) setExpanded(true);
+    dragOffsetY = 0;
+    dragStartY = null;
+}
 </script>
 
 <div

@@ -1,33 +1,33 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { apiFetch } from "$lib/api";
-    import type { Playlist } from "$lib/types";
-    import { m } from "$lib/paraglide/messages";
-    import { authStore } from "$lib/stores/auth";
+import { onMount } from "svelte";
+import { apiFetch } from "$lib/api";
+import { m } from "$lib/paraglide/messages";
+import { authStore } from "$lib/stores/auth";
+import type { Playlist } from "$lib/types";
 
-    let playlists = $state<Playlist[]>([]);
-    let showCreateModal = $state(false);
-    let newPlaylistName = $state("");
+let playlists = $state<Playlist[]>([]);
+let showCreateModal = $state(false);
+let newPlaylistName = $state("");
 
-    async function loadPlaylists() {
-        playlists = await apiFetch<Playlist[]>("/playlists");
-    }
+async function loadPlaylists() {
+    playlists = await apiFetch<Playlist[]>("/playlists");
+}
 
-    async function createPlaylist(e: Event) {
-        e.preventDefault();
-        if (!newPlaylistName.trim()) return;
+async function createPlaylist(e: Event) {
+    e.preventDefault();
+    if (!newPlaylistName.trim()) return;
 
-        await apiFetch("/playlists", {
-            method: "POST",
-            body: JSON.stringify({ name: newPlaylistName }),
-        });
+    await apiFetch("/playlists", {
+        method: "POST",
+        body: JSON.stringify({ name: newPlaylistName }),
+    });
 
-        newPlaylistName = "";
-        showCreateModal = false;
-        await loadPlaylists();
-    }
+    newPlaylistName = "";
+    showCreateModal = false;
+    await loadPlaylists();
+}
 
-    onMount(loadPlaylists);
+onMount(loadPlaylists);
 </script>
 
 <div class="flex flex-col gap-4">

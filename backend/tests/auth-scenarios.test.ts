@@ -1,9 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app";
 import { AppDataSource } from "../src/data-source";
-import { registerUser } from "../src/services/auth";
 import { User } from "../src/entities/User";
+import { registerUser } from "../src/services/auth";
 
 describe("authentication scenarios", () => {
     const email = `scenario-${Date.now()}@example.com`;
@@ -28,7 +28,9 @@ describe("authentication scenarios", () => {
     });
 
     it("rejects login with an incorrect password", async () => {
-        const res = await request(app).post("/auth/login").send({ email, password: "wrongpassword" });
+        const res = await request(app)
+            .post("/auth/login")
+            .send({ email, password: "wrongpassword" });
         expect(res.status).toBe(401);
     });
 

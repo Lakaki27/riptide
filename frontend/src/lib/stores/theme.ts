@@ -14,8 +14,7 @@ function applyTheme(theme: Theme) {
 
 function createThemeStore() {
     const stored =
-        (typeof localStorage !== "undefined" &&
-            (localStorage.getItem("riptide-theme") as Theme)) ||
+        (typeof localStorage !== "undefined" && (localStorage.getItem("riptide-theme") as Theme)) ||
         "system";
     const { subscribe, set } = writable<Theme>(stored);
 

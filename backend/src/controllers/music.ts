@@ -1,12 +1,9 @@
 import { Router } from "express";
 import { AppDataSource } from "../data-source";
 import { Music } from "../entities/Music";
-import {
-    deleteFile,
-    getPresignedUrl,
-    withThumbnailUrl,
-} from "../services/media";
 import { requireAdmin } from "../middleware/auth";
+import { deleteFile, getPresignedUrl, withThumbnailUrl } from "../services/media";
+import { getParamAndAssertString } from "../utils/getParamAndAssertString";
 
 const musicRepository = AppDataSource.getRepository(Music);
 const ALLOWED_SORT_FIELDS = new Set(["title", "createdAt", "durationSeconds"]);
@@ -16,8 +13,7 @@ router.get("/", async (req, res) => {
     const page = req.query.page ? Number(req.query.page) : 1;
     const limit = req.query.limit ? Number(req.query.limit) : 50;
     const sortField =
-        typeof req.query.sort === "string" &&
-        ALLOWED_SORT_FIELDS.has(req.query.sort)
+        typeof req.query.sort === "string" && ALLOWED_SORT_FIELDS.has(req.query.sort)
             ? req.query.sort
             : "title";
     const sortOrder = req.query.order === "desc" ? "DESC" : "ASC";
@@ -48,10 +44,7 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/shuffle", async (_req, res) => {
-    const rows = await musicRepository
-        .createQueryBuilder("music")
-        .select("music.id")
-        .getMany();
+    const rows = await musicRepository.createQueryBuilder("music").select("music.id").getMany();
 
     const remaining = rows.map((row) => row.id);
     const shuffled: string[] = [];
@@ -71,7 +64,11 @@ router.get("/shuffle", async (_req, res) => {
 });
 
 router.get("/:id/stream-url", async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid music id" });
+    }
 
     const music = await musicRepository.findOne({ where: { id } });
 
@@ -84,7 +81,11 @@ router.get("/:id/stream-url", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid music id" });
+    }
 
     const music = await musicRepository.findOne({
         where: { id },
@@ -99,7 +100,11 @@ router.get("/:id", async (req, res) => {
 });
 
 router.delete("/:id", requireAdmin, async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid music id" });
+    }
 
     const music = await musicRepository.findOne({ where: { id } });
 

@@ -1,12 +1,5 @@
 import { nanoid } from "nanoid";
-import {
-    BeforeInsert,
-    Column,
-    CreateDateColumn,
-    Entity,
-    ManyToOne,
-    PrimaryColumn,
-} from "typeorm";
+import { BeforeInsert, Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn } from "typeorm";
 import { Artist } from "./Artist";
 
 @Entity()
@@ -17,7 +10,10 @@ export class Music {
     @Column({ type: "varchar" })
     title!: string;
 
-    @ManyToOne(() => Artist, (artist) => artist.musics)
+    @ManyToOne(
+        () => Artist,
+        (artist) => artist.musics,
+    )
     artist!: Artist;
 
     @Column({ type: "int" })
@@ -30,13 +26,13 @@ export class Music {
     thumbnailKey!: string;
 
     @Column({ type: "varchar", nullable: true })
-    codec?: string;
+    codec!: string | null;
 
     @Column({ type: "int", nullable: true })
-    bitrateKbps?: number;
+    bitrateKbps!: number | null;
 
     @Column({ type: "int", nullable: true })
-    sampleRateHz?: number;
+    sampleRateHz!: number | null;
 
     @CreateDateColumn()
     createdAt!: Date;

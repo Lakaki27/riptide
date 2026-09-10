@@ -54,19 +54,14 @@ function runFfmpeg(args: string[]): Promise<boolean> {
     });
 }
 
-export async function ingestAudioFile(
-    sourcePath: string,
-    originalName: string,
-): Promise<Music> {
+export async function ingestAudioFile(sourcePath: string, originalName: string): Promise<Music> {
     const workDir = path.join(tmpdir(), nanoid(12));
     await mkdir(workDir, { recursive: true });
 
     try {
         const probe = await runFfprobe(sourcePath);
         const tags = probe.format.tags ?? {};
-        const duration = probe.format.duration
-            ? Number(probe.format.duration)
-            : 0;
+        const duration = probe.format.duration ? Number(probe.format.duration) : 0;
         const fallbackTitle = path.parse(originalName).name;
 
         const musicId = nanoid(12);
@@ -150,10 +145,7 @@ async function processUploadJob(
     }
 }
 
-export function startUploadJob(
-    sourcePath: string,
-    originalName: string,
-): string {
+export function startUploadJob(sourcePath: string, originalName: string): string {
     const jobId = nanoid(12);
     createJob(jobId);
     processUploadJob(jobId, sourcePath, originalName);

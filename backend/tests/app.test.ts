@@ -1,9 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../src/app";
 import { AppDataSource } from "../src/data-source";
-import { registerUser, adminDeleteUser } from "../src/services/auth";
 import { User } from "../src/entities/User";
+import { adminDeleteUser, registerUser } from "../src/services/auth";
 
 describe("GET /health", () => {
     it("returns status ok", async () => {
@@ -44,9 +44,9 @@ describe("protected account deletion", () => {
             false,
         );
 
-        await expect(
-            adminDeleteUser(protectedUser.id, requester.id),
-        ).rejects.toThrow("this account cannot be deleted");
+        await expect(adminDeleteUser(protectedUser.id, requester.id)).rejects.toThrow(
+            "this account cannot be deleted",
+        );
     });
 
     it("refuses self-deletion", async () => {

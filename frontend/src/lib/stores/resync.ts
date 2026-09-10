@@ -39,13 +39,10 @@ function createResyncStore() {
     return {
         subscribe,
         async start() {
-            const { jobId } = await apiFetch<{ jobId: string }>(
-                "/library/resync",
-                {
-                    method: "POST",
-                    body: JSON.stringify({ regenerateThumbnails: false }),
-                },
-            );
+            const { jobId } = await apiFetch<{ jobId: string }>("/library/resync", {
+                method: "POST",
+                body: JSON.stringify({ regenerateThumbnails: false }),
+            });
             set({ running: true, processed: 0, total: 0 });
             poll(jobId);
         },

@@ -1,124 +1,114 @@
 <script lang="ts">
-    import { playerStore } from "$lib/stores/player";
-    import { playlistsStore } from "$lib/stores/playlists";
-    import { toastStore } from "$lib/stores/toast";
-    import { apiFetch } from "$lib/api";
-    import type { Music } from "$lib/types";
-    import { authStore } from "$lib/stores/auth";
+import { apiFetch } from "$lib/api";
+import { authStore } from "$lib/stores/auth";
+import { playerStore } from "$lib/stores/player";
+import { playlistsStore } from "$lib/stores/playlists";
+import { toastStore } from "$lib/stores/toast";
+import type { Music } from "$lib/types";
 
-    interface Props {
-        music: Music;
-        playlistId?: string;
-        onRemoved?: () => void;
+interface Props {
+    music: Music;
+    playlistId?: string;
+    onRemoved?: () => void;
+}
+
+let { music, playlistId, onRemoved }: Props = $props();
+
+let open = $state(false);
+let showPlaylistSubmenu = $state(false);
+let menuPosition = $state<{ top: number; left: number } | null>(null);
+let submenuPosition = $state<{ top: number; left: number } | null>(null);
+let triggerEl: HTMLElement;
+let playlistRowEl: HTMLElement;
+let submenuEl: HTMLElement;
+
+const MENU_WIDTH = 192;
+const SUBMENU_WIDTH = 208;
+
+function toggleOpen(e: Event) {
+    e.stopPropagation();
+    if (!open) {
+        const rect = triggerEl.getBoundingClientRect();
+
+        const leftAligned = rect.right - MENU_WIDTH;
+        const left = leftAligned >= 8 ? leftAligned : rect.left;
+        const clampedLeft = Math.min(left, window.innerWidth - MENU_WIDTH - 8);
+
+        menuPosition = {
+            top: rect.bottom + 4,
+            left: Math.max(8, clampedLeft),
+        };
+    }
+    open = !open;
+    showPlaylistSubmenu = false;
+    if (open) playlistsStore.ensureLoaded();
+}
+
+function close() {
+    open = false;
+    showPlaylistSubmenu = false;
+}
+
+function handleAddToQueue() {
+    playerStore.addToQueue(music);
+    toastStore.show("Added to queue");
+    close();
+}
+
+function handlePlayNext() {
+    playerStore.playNext(music);
+    toastStore.show("Playing next");
+    close();
+}
+
+function togglePlaylistSubmenu(e: Event) {
+    e.stopPropagation();
+
+    if (!showPlaylistSubmenu) {
+        const rect = playlistRowEl.getBoundingClientRect();
+        const spaceRight = window.innerWidth - rect.right;
+        const openRight = spaceRight >= SUBMENU_WIDTH;
+
+        const left = openRight ? rect.right + 4 : rect.left - SUBMENU_WIDTH - 4;
+
+        const estimatedHeight = 220;
+        const spaceBelow = window.innerHeight - rect.top;
+        const top =
+            spaceBelow >= estimatedHeight
+                ? rect.top
+                : Math.max(8, window.innerHeight - estimatedHeight - 8);
+
+        submenuPosition = { top, left: Math.max(8, left) };
     }
 
-    let { music, playlistId, onRemoved }: Props = $props();
+    showPlaylistSubmenu = !showPlaylistSubmenu;
+}
 
-    let open = $state(false);
-    let showPlaylistSubmenu = $state(false);
-    let menuPosition = $state<{ top: number; left: number } | null>(null);
-    let submenuPosition = $state<{ top: number; left: number } | null>(null);
-    let triggerEl: HTMLElement;
-    let playlistRowEl: HTMLElement;
-    let submenuEl: HTMLElement;
-
-    const MENU_WIDTH = 192;
-    const SUBMENU_WIDTH = 208;
-
-    function toggleOpen(e: Event) {
-        e.stopPropagation();
-        if (!open) {
-            const rect = triggerEl.getBoundingClientRect();
-
-            const leftAligned = rect.right - MENU_WIDTH;
-            const left = leftAligned >= 8 ? leftAligned : rect.left;
-            const clampedLeft = Math.min(
-                left,
-                window.innerWidth - MENU_WIDTH - 8,
-            );
-
-            menuPosition = {
-                top: rect.bottom + 4,
-                left: Math.max(8, clampedLeft),
-            };
-        }
-        open = !open;
-        showPlaylistSubmenu = false;
-        if (open) playlistsStore.ensureLoaded();
-    }
-
-    function close() {
-        open = false;
-        showPlaylistSubmenu = false;
-    }
-
-    function handleAddToQueue() {
-        playerStore.addToQueue(music);
-        toastStore.show("Added to queue");
-        close();
-    }
-
-    function handlePlayNext() {
-        playerStore.playNext(music);
-        toastStore.show("Playing next");
-        close();
-    }
-
-    function togglePlaylistSubmenu(e: Event) {
-        e.stopPropagation();
-
-        if (!showPlaylistSubmenu) {
-            const rect = playlistRowEl.getBoundingClientRect();
-            const spaceRight = window.innerWidth - rect.right;
-            const openRight = spaceRight >= SUBMENU_WIDTH;
-
-            const left = openRight
-                ? rect.right + 4
-                : rect.left - SUBMENU_WIDTH - 4;
-
-            const estimatedHeight = 220;
-            const spaceBelow = window.innerHeight - rect.top;
-            const top =
-                spaceBelow >= estimatedHeight
-                    ? rect.top
-                    : Math.max(8, window.innerHeight - estimatedHeight - 8);
-
-            submenuPosition = { top, left: Math.max(8, left) };
-        }
-
-        showPlaylistSubmenu = !showPlaylistSubmenu;
-    }
-
-    async function handleAddToPlaylist(
-        targetPlaylistId: string,
-        playlistName: string,
-    ) {
-        try {
-            await apiFetch(`/playlists/${targetPlaylistId}`, {
-                method: "POST",
-                body: JSON.stringify({ songId: music.id }),
-            });
-            toastStore.show(`Added to ${playlistName}`);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : "";
-            toastStore.show(
-                message.includes("already")
-                    ? `Already in ${playlistName}`
-                    : "Could not add song",
-            );
-        }
-        close();
-    }
-
-    async function handleRemove() {
-        if (!playlistId) return;
-        await apiFetch(`/playlists/${playlistId}/musics/${music.id}`, {
-            method: "DELETE",
+async function handleAddToPlaylist(targetPlaylistId: string, playlistName: string) {
+    try {
+        await apiFetch(`/playlists/${targetPlaylistId}`, {
+            method: "POST",
+            body: JSON.stringify({ songId: music.id }),
         });
-        toastStore.show("Removed from playlist");
-        close();
-        onRemoved?.();
+        toastStore.show(`Added to ${playlistName}`);
+    } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        toastStore.show(
+            message.includes("already") ? `Already in ${playlistName}` : "Could not add song",
+        );
     }
+    close();
+}
+
+async function handleRemove() {
+    if (!playlistId) return;
+    await apiFetch(`/playlists/${playlistId}/musics/${music.id}`, {
+        method: "DELETE",
+    });
+    toastStore.show("Removed from playlist");
+    close();
+    onRemoved?.();
+}
 </script>
 
 <svelte:window onclick={() => open && close()} />

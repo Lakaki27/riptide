@@ -1,7 +1,7 @@
 import { Router } from "express";
+import { requireAdmin } from "../middleware/auth";
 import { getJobStatus } from "../services/job";
 import { startResyncJob } from "../services/resync";
-import { requireAdmin } from "../middleware/auth";
 
 const router = Router();
 

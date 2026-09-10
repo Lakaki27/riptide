@@ -16,11 +16,13 @@ interface PlayerState {
 function shuffle<T>(items: T[]): T[] {
     const remaining = [...items];
     const result: T[] = [];
+
     while (remaining.length > 0) {
         const index = Math.floor(Math.random() * remaining.length);
         const [picked] = remaining.splice(index, 1);
         if (picked !== undefined) result.push(picked);
     }
+
     return result;
 }
 
@@ -37,11 +39,11 @@ function createPlayerStore() {
     async function playIndex(index: number) {
         const state = get(playerStore);
         const track = state.queue[index];
+
         if (!track) return;
 
-        const { url } = await apiFetch<{ url: string }>(
-            `/musics/${track.id}/stream-url`,
-        );
+        const { url } = await apiFetch<{ url: string }>(`/musics/${track.id}/stream-url`);
+
         update((s) => ({
             ...s,
             currentIndex: index,
@@ -78,11 +80,60 @@ function createPlayerStore() {
         setQueue(tracks: Music[], startIndex = 0) {
             const state = get(playerStore);
             const queue = state.mode === "randomize" ? shuffle(tracks) : tracks;
-            update((s) => ({ ...s, queue, originalQueue: tracks }));
-            const actualStart = queue.findIndex(
-                (t) => t.id === tracks[startIndex]?.id,
-            );
+
+            update((s) => ({
+                ...s,
+                queue,
+                originalQueue: tracks,
+            }));
+
+            const actualStart = queue.findIndex((t) => t.id === tracks[startIndex]?.id);
             playIndex(actualStart >= 0 ? actualStart : 0);
+        },
+        playFromSearch(track: Music) {
+            const state = get(playerStore);
+
+            const existingIndex = state.queue.findIndex((t) => t.id === track.id);
+
+            if (existingIndex >= 0) {
+                playIndex(existingIndex);
+                return;
+            }
+
+            const currentTrack = state.queue[state.currentIndex];
+
+            update((s) => {
+                if (!currentTrack) {
+                    return {
+                        ...s,
+                        queue: [track, ...s.queue],
+                        originalQueue: [track, ...s.originalQueue],
+                        currentIndex: 0,
+                    };
+                }
+
+                const queue = [...s.queue];
+                queue.splice(s.currentIndex + 1, 0, track);
+
+                const originalQueue = [...s.originalQueue];
+                const originalIndex = originalQueue.findIndex((t) => t.id === currentTrack.id);
+
+                originalQueue.splice(
+                    originalIndex >= 0 ? originalIndex + 1 : originalQueue.length,
+                    0,
+                    track,
+                );
+
+                return {
+                    ...s,
+                    queue,
+                    originalQueue,
+                };
+            });
+
+            const newIndex = state.currentIndex >= 0 ? state.currentIndex + 1 : 0;
+
+            playIndex(newIndex);
         },
         addToQueue(track: Music) {
             update((s) => {
@@ -99,16 +150,19 @@ function createPlayerStore() {
             update((s) => {
                 const currentTrack = s.queue[s.currentIndex];
                 const withoutTrack = s.queue.filter((t) => t.id !== track.id);
+
                 const newCurrentIndex = currentTrack
                     ? withoutTrack.findIndex((t) => t.id === currentTrack.id)
                     : -1;
+
                 const insertAt = newCurrentIndex + 1;
+
                 withoutTrack.splice(insertAt, 0, track);
+
                 return {
                     ...s,
                     queue: withoutTrack,
-                    currentIndex:
-                        newCurrentIndex >= 0 ? newCurrentIndex : s.currentIndex,
+                    currentIndex: newCurrentIndex >= 0 ? newCurrentIndex : s.currentIndex,
                 };
             });
         },
@@ -130,6 +184,7 @@ function createPlayerStore() {
         },
         previous() {
             const state = get(playerStore);
+
             if (state.currentIndex > 0) {
                 playIndex(state.currentIndex - 1);
             }
@@ -139,9 +194,11 @@ function createPlayerStore() {
                 if (mode === "randomize") {
                     const currentTrack = s.queue[s.currentIndex];
                     const shuffled = shuffle(s.queue);
+
                     const foundIndex = currentTrack
                         ? shuffled.findIndex((t) => t.id === currentTrack.id)
                         : -1;
+
                     return {
                         ...s,
                         mode,
@@ -152,17 +209,16 @@ function createPlayerStore() {
 
                 if (s.mode === "randomize") {
                     const currentTrack = s.queue[s.currentIndex];
+
                     const foundIndex = currentTrack
-                        ? s.originalQueue.findIndex(
-                              (t) => t.id === currentTrack.id,
-                          )
+                        ? s.originalQueue.findIndex((t) => t.id === currentTrack.id)
                         : -1;
+
                     return {
                         ...s,
                         mode,
                         queue: s.originalQueue,
-                        currentIndex:
-                            foundIndex === -1 ? s.currentIndex : foundIndex,
+                        currentIndex: foundIndex === -1 ? s.currentIndex : foundIndex,
                     };
                 }
 
@@ -170,7 +226,10 @@ function createPlayerStore() {
             });
         },
         togglePlay() {
-            update((s) => ({ ...s, isPlaying: !s.isPlaying }));
+            update((s) => ({
+                ...s,
+                isPlaying: !s.isPlaying,
+            }));
         },
     };
 }

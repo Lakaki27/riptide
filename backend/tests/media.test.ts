@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppDataSource } from "../src/data-source";
-import { findOrCreateArtist } from "../src/services/media";
 import { Artist } from "../src/entities/Artist";
+import { findOrCreateArtist } from "../src/services/media";
 
 describe("findOrCreateArtist", () => {
     beforeAll(async () => {

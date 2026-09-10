@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createJob, getJobStatus, updateJob } from "../src/services/job";
 
 describe("job service", () => {
-    it("creates a job with pending status", () => {
+    it("creates a job with pending status and zero progress", () => {
         const jobId = "test-job-progress";
         createJob(jobId);
-        expect(getJobStatus(jobId)).toEqual({ status: "pending" });
+
+        expect(getJobStatus(jobId)).toEqual({
+            status: "pending",
+            processed: 0,
+            total: 0,
+        });
     });
 
     it("tracks processed/total progress fields", () => {

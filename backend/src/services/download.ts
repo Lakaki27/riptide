@@ -75,10 +75,7 @@ function runYtDlp(url: string, outputTemplate: string): Promise<YtDlpMetadata> {
     });
 }
 
-function convertThumbnailToJpg(
-    inputPath: string,
-    outputPath: string,
-): Promise<void> {
+function convertThumbnailToJpg(inputPath: string, outputPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const proc = spawn("ffmpeg", ["-y", "-i", inputPath, outputPath]);
 
@@ -113,9 +110,7 @@ async function processJob(
 
         const files = await readdir(workDir);
         const oggFile = files.find((f) => f.endsWith(".ogg"));
-        const thumbnailFile = files.find(
-            (f) => f !== oggFile && /\.(webp|jpg|jpeg|png)$/.test(f),
-        );
+        const thumbnailFile = files.find((f) => f !== oggFile && /\.(webp|jpg|jpeg|png)$/.test(f));
 
         if (!oggFile) {
             throw new Error("no ogg output produced");
@@ -151,27 +146,18 @@ async function processJob(
                     stampedPath,
                 ]);
                 proc.on("close", (code) =>
-                    code === 0
-                        ? resolve()
-                        : reject(new Error("ffmpeg re-stamp failed")),
+                    code === 0 ? resolve() : reject(new Error("ffmpeg re-stamp failed")),
                 );
             });
             await uploadFile(stampedPath, musicKey, "audio/ogg");
         } else {
-            await uploadFile(
-                path.join(workDir, oggFile),
-                musicKey,
-                "audio/ogg",
-            );
+            await uploadFile(path.join(workDir, oggFile), musicKey, "audio/ogg");
         }
 
         let thumbnailKey = "";
         if (thumbnailFile) {
             const jpgPath = path.join(workDir, `${musicId}-thumb.jpg`);
-            await convertThumbnailToJpg(
-                path.join(workDir, thumbnailFile),
-                jpgPath,
-            );
+            await convertThumbnailToJpg(path.join(workDir, thumbnailFile), jpgPath);
             thumbnailKey = `thumbnails/${musicId}.jpg`;
             await uploadFile(jpgPath, thumbnailKey, "image/jpeg");
         }
@@ -247,9 +233,7 @@ export function previewDownload(url: string): Promise<DownloadPreview> {
                 return;
             }
             try {
-                const metadata = JSON.parse(
-                    stdout.trim().split("\n").pop() ?? "{}",
-                );
+                const metadata = JSON.parse(stdout.trim().split("\n").pop() ?? "{}");
                 resolve({
                     title: metadata.title ?? "Unknown title",
                     artist:
@@ -284,12 +268,7 @@ export function isValidDownloadUrl(url: string): boolean {
         return false;
     }
 
-    const privateRanges = [
-        /^10\./,
-        /^172\.(1[6-9]|2\d|3[01])\./,
-        /^192\.168\./,
-        /^169\.254\./,
-    ];
+    const privateRanges = [/^10\./, /^172\.(1[6-9]|2\d|3[01])\./, /^192\.168\./, /^169\.254\./];
     if (privateRanges.some((re) => re.test(hostname))) {
         return false;
     }

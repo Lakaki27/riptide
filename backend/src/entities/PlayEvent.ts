@@ -1,12 +1,5 @@
 import { nanoid } from "nanoid";
-import {
-    BeforeInsert,
-    CreateDateColumn,
-    Entity,
-    Index,
-    ManyToOne,
-    PrimaryColumn,
-} from "typeorm";
+import { BeforeInsert, CreateDateColumn, Entity, Index, ManyToOne, PrimaryColumn } from "typeorm";
 import { Music } from "./Music";
 import { User } from "./User";
 

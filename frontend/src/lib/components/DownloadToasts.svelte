@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { m } from "$lib/paraglide/messages";
-    import { downloadsStore } from "$lib/stores/downloads";
-    import { translateDynKey } from "$lib/utils/translateDynKey";
+import { m } from "$lib/paraglide/messages";
+import { downloadsStore } from "$lib/stores/downloads";
+import { translateDynKey } from "$lib/utils/translateDynKey";
 
-    function statusLabel(status: string): string {
-        return translateDynKey(`status_labels.${status}`) || status;
-    }
+function statusLabel(status: string): string {
+    return translateDynKey(`status_labels.${status}`) || status;
+}
 </script>
 
 {#if $downloadsStore.length > 0}

@@ -1,33 +1,26 @@
 import { nanoid } from "nanoid";
-import {
-	BeforeInsert,
-	Column,
-	CreateDateColumn,
-	Entity,
-	OneToMany,
-	PrimaryColumn,
-} from "typeorm";
+import { BeforeInsert, Column, CreateDateColumn, Entity, OneToMany, PrimaryColumn } from "typeorm";
 import { Music } from "./Music";
 
 @Entity()
 export class Artist {
-	@PrimaryColumn({ type: "varchar", length: 12 })
-	id!: string;
+    @PrimaryColumn({ type: "varchar", length: 12 })
+    id!: string;
 
-	@Column({ unique: true, type: "varchar" })
-	name!: string;
+    @Column({ unique: true, type: "varchar" })
+    name!: string;
 
-	@OneToMany(
-		() => Music,
-		(music) => music.artist,
-	)
-	musics!: Music[];
+    @OneToMany(
+        () => Music,
+        (music) => music.artist,
+    )
+    musics!: Music[];
 
-	@CreateDateColumn()
-	createdAt!: Date;
+    @CreateDateColumn()
+    createdAt!: Date;
 
-	@BeforeInsert()
-	generateId() {
-		this.id = nanoid(12);
-	}
+    @BeforeInsert()
+    generateId() {
+        this.id = nanoid(12);
+    }
 }

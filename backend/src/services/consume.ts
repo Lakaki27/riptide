@@ -2,8 +2,8 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { nanoid } from "nanoid";
 import { requireEnv } from "../env";
-import { ingestAudioFile } from "./upload";
 import { createJob, updateJob } from "./job";
+import { ingestAudioFile } from "./upload";
 
 const AUDIO_EXTENSIONS = new Set([
     ".mp3",
@@ -23,9 +23,7 @@ async function listAudioFiles(dir: string): Promise<string[]> {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             files.push(...(await listAudioFiles(fullPath)));
-        } else if (
-            AUDIO_EXTENSIONS.has(path.extname(entry.name).toLowerCase())
-        ) {
+        } else if (AUDIO_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
             files.push(fullPath);
         }
     }

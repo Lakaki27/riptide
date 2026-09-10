@@ -1,13 +1,13 @@
 <script lang="ts">
-    import { page } from "$app/state";
+import { page } from "$app/state";
 
-    const links = [
-        { href: "/", label: "Home", icon: "bx-home" },
-        { href: "/artists", label: "Artists", icon: "bx-microphone" },
-        { href: "/playlists", label: "Playlists", icon: "bx-list-ul" },
-        { href: "/statistics", label: "Stats", icon: "bx-bar-chart-alt-2" },
-        { href: "/settings", label: "Settings", icon: "bx-cog" },
-    ];
+const links = [
+    { href: "/", label: "Home", icon: "bx-home" },
+    { href: "/artists", label: "Artists", icon: "bx-microphone" },
+    { href: "/playlists", label: "Playlists", icon: "bx-list-ul" },
+    { href: "/statistics", label: "Stats", icon: "bx-bar-chart-alt-2" },
+    { href: "/settings", label: "Settings", icon: "bx-cog" },
+];
 </script>
 
 <nav

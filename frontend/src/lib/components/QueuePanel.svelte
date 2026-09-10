@@ -1,55 +1,47 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-    import { playerStore } from "$lib/stores/player";
-    import { mobileQueueOpen } from "$lib/stores/ui";
-    import MusicList from "$lib/components/MusicList.svelte";
-    import type { Music } from "$lib/types";
-    import { m } from "$lib/paraglide/messages";
+import { goto } from "$app/navigation";
+import MusicList from "$lib/components/MusicList.svelte";
+import { m } from "$lib/paraglide/messages";
+import { playerStore } from "$lib/stores/player";
+import { mobileQueueOpen } from "$lib/stores/ui";
+import type { Music } from "$lib/types";
 
-    let searchQuery = $state("");
-    let scrollContainer: HTMLElement;
+let searchQuery = $state("");
+let scrollContainer: HTMLElement;
 
-    const indexedQueue = $derived(
-        $playerStore.queue.map((music, index) => ({ music, index })),
-    );
+const indexedQueue = $derived($playerStore.queue.map((music, index) => ({ music, index })));
 
-    const filteredIndexed = $derived(
-        searchQuery.trim()
-            ? indexedQueue.filter(
-                  ({ music }) =>
-                      music.title
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                      music.artist.name
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()),
-              )
-            : indexedQueue,
-    );
+const filteredIndexed = $derived(
+    searchQuery.trim()
+        ? indexedQueue.filter(
+              ({ music }) =>
+                  music.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  music.artist.name.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+        : indexedQueue,
+);
 
-    const filteredMusics = $derived(filteredIndexed.map((x) => x.music));
+const filteredMusics = $derived(filteredIndexed.map((x) => x.music));
 
-    function handlePlay(filteredIndex: number) {
-        const realIndex = filteredIndexed[filteredIndex]?.index;
-        if (realIndex !== undefined) playerStore.jumpTo(realIndex);
-    }
+function handlePlay(filteredIndex: number) {
+    const realIndex = filteredIndexed[filteredIndex]?.index;
+    if (realIndex !== undefined) playerStore.jumpTo(realIndex);
+}
 
-    function handleTitleNavigate(music: Music) {
-        $mobileQueueOpen = false;
-        goto(`/artists/${music.artist.id}`);
-    }
+function handleTitleNavigate(music: Music) {
+    $mobileQueueOpen = false;
+    goto(`/artists/${music.artist.id}`);
+}
 
-    $effect(() => {
-        const current = $playerStore.currentIndex;
-        if (!scrollContainer) return;
-        const isScrollable =
-            scrollContainer.scrollHeight > scrollContainer.clientHeight;
-        if (!isScrollable) return;
-        const rowHeight = 48;
-        const targetTop =
-            filteredIndexed.findIndex((x) => x.index === current) * rowHeight;
-        scrollContainer.scrollTo({ top: targetTop, behavior: "smooth" });
-    });
+$effect(() => {
+    const current = $playerStore.currentIndex;
+    if (!scrollContainer) return;
+    const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+    if (!isScrollable) return;
+    const rowHeight = 48;
+    const targetTop = filteredIndexed.findIndex((x) => x.index === current) * rowHeight;
+    scrollContainer.scrollTo({ top: targetTop, behavior: "smooth" });
+});
 </script>
 
 {#if $mobileQueueOpen}

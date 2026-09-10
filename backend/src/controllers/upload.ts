@@ -1,9 +1,9 @@
 import { tmpdir } from "node:os";
 import { Router } from "express";
 import multer from "multer";
+import { requireAdmin } from "../middleware/auth";
 import { getJobStatus } from "../services/job";
 import { startUploadJob } from "../services/upload";
-import { requireAdmin } from "../middleware/auth";
 
 const upload = multer({
     dest: tmpdir(),
@@ -18,9 +18,7 @@ router.post("/", requireAdmin, upload.array("files"), (req, res) => {
         return res.status(400).json({ error: "at least one file is required" });
     }
 
-    const jobIds = files.map((file) =>
-        startUploadJob(file.path, file.originalname),
-    );
+    const jobIds = files.map((file) => startUploadJob(file.path, file.originalname));
 
     res.status(202).json({ jobIds });
 });

@@ -1,62 +1,56 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { page } from "$app/state";
-    import { apiFetch } from "$lib/api";
-    import { playerStore } from "$lib/stores/player";
-    import type { Music, Playlist, PaginatedResponse } from "$lib/types";
-    import MusicList from "$lib/components/MusicList.svelte";
-    import { m } from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { page } from "$app/state";
+import { apiFetch } from "$lib/api";
+import MusicList from "$lib/components/MusicList.svelte";
+import { m } from "$lib/paraglide/messages";
+import { playerStore } from "$lib/stores/player";
+import type { Music, PaginatedResponse, Playlist } from "$lib/types";
 
-    const playlistId = page.params.id;
+const playlistId = page.params.id;
 
-    let playlist = $state<Playlist | null>(null);
-    let localQuery = $state("");
-    let showAddModal = $state(false);
-    let addQuery = $state("");
-    let addResults = $state<Music[]>([]);
+let playlist = $state<Playlist | null>(null);
+let localQuery = $state("");
+let showAddModal = $state(false);
+let addQuery = $state("");
+let addResults = $state<Music[]>([]);
 
-    const filteredMusics = $derived(
-        playlist?.musics.filter((m) =>
-            m.title.toLowerCase().includes(localQuery.toLowerCase()),
-        ) ?? [],
+const filteredMusics = $derived(
+    playlist?.musics.filter((m) => m.title.toLowerCase().includes(localQuery.toLowerCase())) ?? [],
+);
+
+const playlistMusicIds = $derived(new Set(playlist?.musics.map((m) => m.id) ?? []));
+
+const visibleAddResults = $derived(addResults.filter((m) => !playlistMusicIds.has(m.id)));
+
+async function loadPlaylist() {
+    playlist = await apiFetch<Playlist>(`/playlists/${playlistId}`);
+}
+
+async function searchToAdd() {
+    if (!addQuery.trim()) {
+        addResults = [];
+        return;
+    }
+    const data = await apiFetch<PaginatedResponse<Music>>(
+        `/search?type=music&q=${encodeURIComponent(addQuery)}`,
     );
+    addResults = data.results;
+}
 
-    const playlistMusicIds = $derived(
-        new Set(playlist?.musics.map((m) => m.id) ?? []),
-    );
+async function addSong(musicId: string) {
+    await apiFetch(`/playlists/${playlistId}`, {
+        method: "POST",
+        body: JSON.stringify({ songId: musicId }),
+    });
+    await loadPlaylist();
+}
 
-    const visibleAddResults = $derived(
-        addResults.filter((m) => !playlistMusicIds.has(m.id)),
-    );
+function playAll() {
+    if (playlist) playerStore.setQueue(playlist.musics, 0);
+}
 
-    async function loadPlaylist() {
-        playlist = await apiFetch<Playlist>(`/playlists/${playlistId}`);
-    }
-
-    async function searchToAdd() {
-        if (!addQuery.trim()) {
-            addResults = [];
-            return;
-        }
-        const data = await apiFetch<PaginatedResponse<Music>>(
-            `/search?type=music&q=${encodeURIComponent(addQuery)}`,
-        );
-        addResults = data.results;
-    }
-
-    async function addSong(musicId: string) {
-        await apiFetch(`/playlists/${playlistId}`, {
-            method: "POST",
-            body: JSON.stringify({ songId: musicId }),
-        });
-        await loadPlaylist();
-    }
-
-    function playAll() {
-        if (playlist) playerStore.setQueue(playlist.musics, 0);
-    }
-
-    onMount(loadPlaylist);
+onMount(loadPlaylist);
 </script>
 
 {#if playlist}

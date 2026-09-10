@@ -1,42 +1,42 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { page } from "$app/state";
-    import { goto } from "$app/navigation";
-    import { apiFetch } from "$lib/api";
-    import { playerStore } from "$lib/stores/player";
-    import type { Music } from "$lib/types";
-    import MusicList from "$lib/components/MusicList.svelte";
-    import { m } from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { goto } from "$app/navigation";
+import { page } from "$app/state";
+import { apiFetch } from "$lib/api";
+import MusicList from "$lib/components/MusicList.svelte";
+import { m } from "$lib/paraglide/messages";
+import { playerStore } from "$lib/stores/player";
+import type { Music } from "$lib/types";
 
-    const artistId = page.params.id;
+const artistId = page.params.id;
 
-    interface ArtistDetail {
-        id: string;
-        name: string;
-        createdAt: string;
-        musics: Music[];
-        total: number;
+interface ArtistDetail {
+    id: string;
+    name: string;
+    createdAt: string;
+    musics: Music[];
+    total: number;
+}
+
+let artist = $state<ArtistDetail | null>(null);
+
+async function loadArtist() {
+    artist = await apiFetch<ArtistDetail>(`/artists/${artistId}`);
+}
+
+function playAll() {
+    if (artist) playerStore.setQueue(artist.musics, 0);
+}
+
+function goBack() {
+    if (window.history.length > 1) {
+        history.back();
+    } else {
+        goto("/");
     }
+}
 
-    let artist = $state<ArtistDetail | null>(null);
-
-    async function loadArtist() {
-        artist = await apiFetch<ArtistDetail>(`/artists/${artistId}`);
-    }
-
-    function playAll() {
-        if (artist) playerStore.setQueue(artist.musics, 0);
-    }
-
-    function goBack() {
-        if (window.history.length > 1) {
-            history.back();
-        } else {
-            goto("/");
-        }
-    }
-
-    onMount(loadArtist);
+onMount(loadArtist);
 </script>
 
 {#if artist}

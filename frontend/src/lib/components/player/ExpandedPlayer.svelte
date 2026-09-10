@@ -1,171 +1,159 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-    import { playerStore } from "$lib/stores/player";
-    import { getDominantColor } from "$lib/utils/dominantColor";
+import { goto } from "$app/navigation";
+import { m } from "$lib/paraglide/messages";
+import { playerStore } from "$lib/stores/player";
 
-    import type { Music } from "$lib/types";
-    import { m } from "$lib/paraglide/messages";
+import type { Music } from "$lib/types";
+import { getDominantColor } from "$lib/utils/dominantColor";
 
-    interface Props {
-        track: Music;
-        currentTime: number;
-        isPlaying: boolean;
-        audioEl: HTMLAudioElement;
-        togglePlayback: () => void;
-        setExpanded: (value: boolean) => void;
-        openQueueFromOverlay: () => void;
-    }
+interface Props {
+    track: Music;
+    currentTime: number;
+    isPlaying: boolean;
+    audioEl: HTMLAudioElement;
+    togglePlayback: () => void;
+    setExpanded: (value: boolean) => void;
+    openQueueFromOverlay: () => void;
+}
 
-    let {
-        track,
-        currentTime,
-        isPlaying,
-        audioEl,
-        togglePlayback,
-        setExpanded,
-        openQueueFromOverlay,
-    }: Props = $props();
+let {
+    track,
+    currentTime,
+    isPlaying,
+    audioEl,
+    togglePlayback,
+    setExpanded,
+    openQueueFromOverlay,
+}: Props = $props();
 
-    let dragStartY = $state<number | null>(null);
-    let dragStartX = $state<number | null>(null);
-    let dragOffsetY = $state(0);
-    let imgOffsetX = $state(0);
-    let dragging = $state(false);
-    let axisLocked = $state<"none" | "vertical" | "horizontal">("none");
-    let ambientColor = $state<string | null>(null);
+let dragStartY = $state<number | null>(null);
+let dragStartX = $state<number | null>(null);
+let dragOffsetY = $state(0);
+let imgOffsetX = $state(0);
+let dragging = $state(false);
+let axisLocked = $state<"none" | "vertical" | "horizontal">("none");
+let ambientColor = $state<string | null>(null);
 
-    let titleEl: HTMLElement;
-    let titleContainerEl: HTMLElement;
-    let titleOverflows = $state(false);
-    let artistEl: HTMLElement;
-    let artistContainerEl: HTMLElement;
-    let artistOverflows = $state(false);
+let titleEl: HTMLElement;
+let titleContainerEl: HTMLElement;
+let titleOverflows = $state(false);
+let artistEl: HTMLElement;
+let artistContainerEl: HTMLElement;
+let artistOverflows = $state(false);
 
-    $effect(() => {
-        track;
-        titleOverflows = false;
-        artistOverflows = false;
-        queueMicrotask(() => {
-            if (titleEl && titleContainerEl) {
-                titleOverflows =
-                    titleEl.scrollWidth > titleContainerEl.clientWidth;
-            }
-            if (artistEl && artistContainerEl) {
-                artistOverflows =
-                    artistEl.scrollWidth > artistContainerEl.clientWidth;
-            }
-        });
-    });
-
-    $effect(() => {
-        if (!track?.thumbnailUrl) {
-            ambientColor = null;
-            return;
+$effect(() => {
+    track;
+    titleOverflows = false;
+    artistOverflows = false;
+    queueMicrotask(() => {
+        if (titleEl && titleContainerEl) {
+            titleOverflows = titleEl.scrollWidth > titleContainerEl.clientWidth;
         }
-        getDominantColor(track.thumbnailUrl).then((color) => {
-            ambientColor = color;
-        });
+        if (artistEl && artistContainerEl) {
+            artistOverflows = artistEl.scrollWidth > artistContainerEl.clientWidth;
+        }
     });
+});
 
-    function formatTime(seconds: number): string {
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return `${m}:${s.toString().padStart(2, "0")}`;
+$effect(() => {
+    if (!track?.thumbnailUrl) {
+        ambientColor = null;
+        return;
+    }
+    getDominantColor(track.thumbnailUrl).then((color) => {
+        ambientColor = color;
+    });
+});
+
+function formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+const modeOrder = ["normal", "loop-song", "loop-playlist", "randomize"] as const;
+
+const modeIcon: Record<(typeof modeOrder)[number], string> = {
+    normal: "bx-music",
+    "loop-song": "bx-rotate-right",
+    "loop-playlist": "bx-repeat",
+    randomize: "bx-shuffle",
+};
+
+const modeLabel: Record<(typeof modeOrder)[number], string> = {
+    normal: "Play through",
+    "loop-song": "Loop this song",
+    "loop-playlist": "Loop playlist",
+    randomize: "Shuffle",
+};
+
+function cycleMode() {
+    const currentIndex = modeOrder.indexOf($playerStore.mode);
+    playerStore.setMode(modeOrder[(currentIndex + 1) % modeOrder.length]);
+}
+
+function goToArtist() {
+    setExpanded(false);
+    goto(`/artists/${track.artist.id}`);
+}
+
+function onTouchStart(e: TouchEvent) {
+    dragStartY = e.touches[0].clientY;
+    dragStartX = e.touches[0].clientX;
+    dragging = true;
+    axisLocked = "none";
+}
+
+function onTouchMove(e: TouchEvent) {
+    if (dragStartY === null || dragStartX === null) return;
+    const deltaY = e.touches[0].clientY - dragStartY;
+    const deltaX = e.touches[0].clientX - dragStartX;
+
+    if (axisLocked === "none" && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+        axisLocked = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
     }
 
-    const modeOrder = [
-        "normal",
-        "loop-song",
-        "loop-playlist",
-        "randomize",
-    ] as const;
-
-    const modeIcon: Record<(typeof modeOrder)[number], string> = {
-        normal: "bx-music",
-        "loop-song": "bx-rotate-right",
-        "loop-playlist": "bx-repeat",
-        randomize: "bx-shuffle",
-    };
-
-    const modeLabel: Record<(typeof modeOrder)[number], string> = {
-        normal: "Play through",
-        "loop-song": "Loop this song",
-        "loop-playlist": "Loop playlist",
-        randomize: "Shuffle",
-    };
-
-    function cycleMode() {
-        const currentIndex = modeOrder.indexOf($playerStore.mode);
-        playerStore.setMode(modeOrder[(currentIndex + 1) % modeOrder.length]);
+    if (axisLocked === "horizontal") {
+        imgOffsetX = deltaX;
+    } else if (axisLocked === "vertical" && deltaY > 0) {
+        dragOffsetY = deltaY;
     }
+}
 
-    function goToArtist() {
+function onTouchEnd() {
+    dragging = false;
+
+    if (axisLocked === "vertical" && dragOffsetY > 120) {
         setExpanded(false);
-        goto(`/artists/${track.artist.id}`);
-    }
-
-    function onTouchStart(e: TouchEvent) {
-        dragStartY = e.touches[0].clientY;
-        dragStartX = e.touches[0].clientX;
-        dragging = true;
-        axisLocked = "none";
-    }
-
-    function onTouchMove(e: TouchEvent) {
-        if (dragStartY === null || dragStartX === null) return;
-        const deltaY = e.touches[0].clientY - dragStartY;
-        const deltaX = e.touches[0].clientX - dragStartX;
-
-        if (
-            axisLocked === "none" &&
-            (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)
-        ) {
-            axisLocked =
-                Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
-        }
-
-        if (axisLocked === "horizontal") {
-            imgOffsetX = deltaX;
-        } else if (axisLocked === "vertical" && deltaY > 0) {
-            dragOffsetY = deltaY;
-        }
-    }
-
-    function onTouchEnd() {
-        dragging = false;
-
-        if (axisLocked === "vertical" && dragOffsetY > 120) {
-            setExpanded(false);
-            dragOffsetY = 0;
-        } else if (axisLocked === "horizontal" && Math.abs(imgOffsetX) > 80) {
-            const goingNext = imgOffsetX < 0;
-            imgOffsetX = goingNext ? -320 : 320;
-            setTimeout(() => {
-                if (goingNext) {
-                    playerStore.skipNext();
-                } else {
-                    playerStore.previous();
-                }
-                imgOffsetX = 0;
-            }, 180);
-        } else {
-            dragOffsetY = 0;
+        dragOffsetY = 0;
+    } else if (axisLocked === "horizontal" && Math.abs(imgOffsetX) > 80) {
+        const goingNext = imgOffsetX < 0;
+        imgOffsetX = goingNext ? -320 : 320;
+        setTimeout(() => {
+            if (goingNext) {
+                playerStore.skipNext();
+            } else {
+                playerStore.previous();
+            }
             imgOffsetX = 0;
-        }
-
-        dragStartY = null;
-        dragStartX = null;
-        axisLocked = "none";
+        }, 180);
+    } else {
+        dragOffsetY = 0;
+        imgOffsetX = 0;
     }
 
-    function formatAudioInfo(): string | null {
-        const parts: string[] = [];
-        if (track.codec) parts.push(track.codec);
-        if (track.bitrateKbps) parts.push(`${track.bitrateKbps}kb/s`);
-        if (track.sampleRateHz)
-            parts.push(`${(track.sampleRateHz / 1000).toFixed(1)}kHz`);
-        return parts.length > 0 ? parts.join(" · ") : null;
-    }
+    dragStartY = null;
+    dragStartX = null;
+    axisLocked = "none";
+}
+
+function formatAudioInfo(): string | null {
+    const parts: string[] = [];
+    if (track.codec) parts.push(track.codec);
+    if (track.bitrateKbps) parts.push(`${track.bitrateKbps}kb/s`);
+    if (track.sampleRateHz) parts.push(`${(track.sampleRateHz / 1000).toFixed(1)}kHz`);
+    return parts.length > 0 ? parts.join(" · ") : null;
+}
 </script>
 
 <div

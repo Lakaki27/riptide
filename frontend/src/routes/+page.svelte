@@ -1,72 +1,68 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { apiFetch } from "$lib/api";
-    import { downloadsStore } from "$lib/stores/downloads";
-    import type { Music, PaginatedResponse } from "$lib/types";
-    import AddSongModal from "$lib/components/AddSongModal.svelte";
-    import MusicList from "$lib/components/MusicList.svelte";
-    import { m } from "$lib/paraglide/messages";
-    import { authStore } from "$lib/stores/auth";
+import { onMount } from "svelte";
+import { apiFetch } from "$lib/api";
+import AddSongModal from "$lib/components/AddSongModal.svelte";
+import MusicList from "$lib/components/MusicList.svelte";
+import { m } from "$lib/paraglide/messages";
+import { authStore } from "$lib/stores/auth";
+import { downloadsStore } from "$lib/stores/downloads";
+import type { Music, PaginatedResponse } from "$lib/types";
 
-    let musics = $state<Music[]>([]);
-    let query = $state("");
-    let page = $state(1);
-    let totalPages = $state(1);
-    let loading = $state(false);
-    let showAddModal = $state(false);
+let musics = $state<Music[]>([]);
+let query = $state("");
+let page = $state(1);
+let totalPages = $state(1);
+let loading = $state(false);
+let showAddModal = $state(false);
 
-    async function loadPage(reset = false) {
-        if (loading) return;
-        if (reset) {
-            musics = [];
-            page = 1;
-            totalPages = 1;
-        }
-        if (page > totalPages) return;
-
-        loading = true;
-        const data = await apiFetch<PaginatedResponse<Music>>(
-            `/musics?page=${page}&limit=50`,
-        );
-        musics = [...musics, ...data.results];
-        totalPages = data.totalPages;
-        page += 1;
-        loading = false;
-    }
-
-    async function search() {
-        if (!query.trim()) {
-            await loadPage(true);
-            return;
-        }
-        const data = await apiFetch<PaginatedResponse<Music>>(
-            `/search?type=music&q=${encodeURIComponent(query)}`,
-        );
-        musics = data.results;
+async function loadPage(reset = false) {
+    if (loading) return;
+    if (reset) {
+        musics = [];
+        page = 1;
         totalPages = 1;
-        page = 2;
     }
+    if (page > totalPages) return;
 
-    function onScroll(e: Event) {
-        if (query.trim()) return;
-        const el = e.target as HTMLElement;
-        if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
-            loadPage();
-        }
+    loading = true;
+    const data = await apiFetch<PaginatedResponse<Music>>(`/musics?page=${page}&limit=50`);
+    musics = [...musics, ...data.results];
+    totalPages = data.totalPages;
+    page += 1;
+    loading = false;
+}
+
+async function search() {
+    if (!query.trim()) {
+        await loadPage(true);
+        return;
     }
+    const data = await apiFetch<PaginatedResponse<Music>>(
+        `/search?type=music&q=${encodeURIComponent(query)}`,
+    );
+    musics = data.results;
+    totalPages = 1;
+    page = 2;
+}
 
-    let previousDoneCount = 0;
-    $effect(() => {
-        const doneCount = $downloadsStore.filter(
-            (j) => j.status === "done",
-        ).length;
-        if (doneCount > previousDoneCount) {
-            loadPage(true);
-        }
-        previousDoneCount = doneCount;
-    });
+function onScroll(e: Event) {
+    if (query.trim()) return;
+    const el = e.target as HTMLElement;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+        loadPage();
+    }
+}
 
-    onMount(() => loadPage());
+let previousDoneCount = 0;
+$effect(() => {
+    const doneCount = $downloadsStore.filter((j) => j.status === "done").length;
+    if (doneCount > previousDoneCount) {
+        loadPage(true);
+    }
+    previousDoneCount = doneCount;
+});
+
+onMount(() => loadPage());
 </script>
 
 <div class="flex h-full flex-col gap-4">

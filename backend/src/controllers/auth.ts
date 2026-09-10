@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { requireAdmin, requireAuth } from "../middleware/auth";
 import {
     adminCreateUser,
@@ -11,11 +12,10 @@ import {
     getUserById,
     loginUser,
     refreshTokens,
-    registerUser,
     updateUserPreferences,
     validatePasswordLength,
 } from "../services/auth";
-import rateLimit from "express-rate-limit";
+import { getParamAndAssertString } from "../utils/getParamAndAssertString";
 
 const router = Router();
 
@@ -30,9 +30,7 @@ const loginLimiter = rateLimit({
 router.post("/login", loginLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
-        return res
-            .status(400)
-            .json({ error: "email and password are required" });
+        return res.status(400).json({ error: "email and password are required" });
     }
     try {
         const result = await loginUser(email, password);
@@ -45,9 +43,7 @@ router.post("/login", loginLimiter, async (req, res) => {
 router.post("/complete-reset", async (req, res) => {
     const { resetToken, newPassword } = req.body;
     if (!resetToken || !newPassword) {
-        return res
-            .status(400)
-            .json({ error: "resetToken and newPassword are required" });
+        return res.status(400).json({ error: "resetToken and newPassword are required" });
     }
 
     const lengthError = validatePasswordLength(newPassword);
@@ -116,9 +112,7 @@ router.patch("/me", requireAuth, async (req, res) => {
 router.post("/change-password", requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
-        return res
-            .status(400)
-            .json({ error: "currentPassword and newPassword are required" });
+        return res.status(400).json({ error: "currentPassword and newPassword are required" });
     }
 
     const lengthError = validatePasswordLength(newPassword);
@@ -136,10 +130,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
         res.sendStatus(204);
     } catch (err) {
         res.status(400).json({
-            error:
-                err instanceof Error
-                    ? err.message
-                    : "failed to change password",
+            error: err instanceof Error ? err.message : "failed to change password",
         });
     }
 });
@@ -180,25 +171,32 @@ router.post("/users", requireAuth, requireAdmin, async (req, res) => {
     }
 });
 
-router.post(
-    "/users/:id/reset-password",
-    requireAuth,
-    requireAdmin,
-    async (req, res) => {
-        try {
-            const password = await adminResetUserPassword(req.params.id);
-            res.json({ password });
-        } catch (err) {
-            res.status(404).json({
-                error: err instanceof Error ? err.message : "user not found",
-            });
-        }
-    },
-);
+router.post("/users/:id/reset-password", requireAuth, requireAdmin, async (req, res) => {
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid user id" });
+    }
+
+    try {
+        const password = await adminResetUserPassword(id);
+        res.json({ password });
+    } catch (err) {
+        res.status(404).json({
+            error: err instanceof Error ? err.message : "user not found",
+        });
+    }
+});
 
 router.delete("/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid user id" });
+    }
+
     try {
-        await adminDeleteUser(req.params.id, req.user!.sub);
+        await adminDeleteUser(id, req.user!.sub);
         res.sendStatus(204);
     } catch (err) {
         res.status(400).json({

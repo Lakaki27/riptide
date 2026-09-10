@@ -1,11 +1,5 @@
 import { nanoid } from "nanoid";
-import {
-    BeforeInsert,
-    Column,
-    CreateDateColumn,
-    Entity,
-    PrimaryColumn,
-} from "typeorm";
+import { BeforeInsert, Column, CreateDateColumn, Entity, PrimaryColumn } from "typeorm";
 
 @Entity()
 export class User {

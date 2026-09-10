@@ -1,4 +1,4 @@
-import { writable, get } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 interface AuthState {
     accessToken: string | null;
@@ -18,10 +18,7 @@ function decodeRole(token: string): "admin" | "user" | null {
     }
 }
 
-function loadFromStorage(): Pick<
-    AuthState,
-    "accessToken" | "refreshToken" | "role"
-> {
+function loadFromStorage(): Pick<AuthState, "accessToken" | "refreshToken" | "role"> {
     if (typeof localStorage === "undefined") {
         return { accessToken: null, refreshToken: null, role: null };
     }
@@ -41,10 +38,7 @@ function saveToStorage(
 ) {
     if (typeof localStorage === "undefined") return;
     if (accessToken && refreshToken) {
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({ accessToken, refreshToken, role }),
-        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ accessToken, refreshToken, role }));
     } else {
         localStorage.removeItem(STORAGE_KEY);
     }
@@ -101,14 +95,11 @@ function createAuthStore() {
             return { needsPasswordReset: false as const };
         },
         async completeReset(resetToken: string, newPassword: string) {
-            const response = await fetch(
-                `/api/auth/complete-reset`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ resetToken, newPassword }),
-                },
-            );
+            const response = await fetch(`/api/auth/complete-reset`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ resetToken, newPassword }),
+            });
 
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
@@ -125,14 +116,11 @@ function createAuthStore() {
                 return false;
             }
 
-            const response = await fetch(
-                `/api/auth/refresh`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ refreshToken: state.refreshToken }),
-                },
-            );
+            const response = await fetch(`/api/auth/refresh`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refreshToken: state.refreshToken }),
+            });
 
             if (!response.ok) {
                 saveToStorage(null, null, null);

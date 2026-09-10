@@ -1,40 +1,40 @@
 <script lang="ts">
-    import SongMenu from "$lib/components/SongMenu.svelte";
-    import type { Music } from "$lib/types";
-    import { goto } from "$app/navigation";
+import { goto } from "$app/navigation";
+import SongMenu from "$lib/components/SongMenu.svelte";
+import type { Music } from "$lib/types";
 
-    interface Props {
-        music: Music;
-        onPlay: () => void;
-        playlistId?: string;
-        onRemoved?: () => void;
-        active?: boolean;
-        compact?: boolean;
-        showMenu?: boolean;
-        onTitleNavigate?: (music: Music) => void;
+interface Props {
+    music: Music;
+    onPlay: () => void;
+    playlistId?: string;
+    onRemoved?: () => void;
+    active?: boolean;
+    compact?: boolean;
+    showMenu?: boolean;
+    onTitleNavigate?: (music: Music) => void;
+}
+
+let {
+    music,
+    onPlay,
+    playlistId,
+    onRemoved,
+    active = false,
+    compact = false,
+    showMenu = true,
+    onTitleNavigate,
+}: Props = $props();
+
+function stop(e: Event) {
+    e.stopPropagation();
+}
+
+function handleTitleClick(e: Event) {
+    if (onTitleNavigate) {
+        stop(e);
+        onTitleNavigate(music);
     }
-
-    let {
-        music,
-        onPlay,
-        playlistId,
-        onRemoved,
-        active = false,
-        compact = false,
-        showMenu = true,
-        onTitleNavigate,
-    }: Props = $props();
-
-    function stop(e: Event) {
-        e.stopPropagation();
-    }
-
-    function handleTitleClick(e: Event) {
-        if (onTitleNavigate) {
-            stop(e);
-            onTitleNavigate(music);
-        }
-    }
+}
 </script>
 
 <div

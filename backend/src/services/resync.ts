@@ -5,11 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import {
-    GetObjectCommand,
-    HeadObjectCommand,
-    ListObjectsV2Command,
-} from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { nanoid } from "nanoid";
 import { AppDataSource } from "../data-source";
 import { Music } from "../entities/Music";
@@ -64,23 +60,15 @@ function runFfmpeg(args: string[]): Promise<boolean> {
 
 async function objectExists(bucket: string, key: string): Promise<boolean> {
     try {
-        await s3Client.send(
-            new HeadObjectCommand({ Bucket: bucket, Key: key }),
-        );
+        await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
         return true;
     } catch {
         return false;
     }
 }
 
-async function downloadObjectToFile(
-    bucket: string,
-    key: string,
-    destPath: string,
-): Promise<void> {
-    const result = await s3Client.send(
-        new GetObjectCommand({ Bucket: bucket, Key: key }),
-    );
+async function downloadObjectToFile(bucket: string, key: string, destPath: string): Promise<void> {
+    const result = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
     const body = result.Body as Readable;
     await pipeline(body, createWriteStream(destPath));
 }
@@ -108,10 +96,7 @@ async function listMusicKeys(bucket: string): Promise<string[]> {
     return keys;
 }
 
-async function processResyncJob(
-    jobId: string,
-    regenerateThumbnails: boolean,
-): Promise<void> {
+async function processResyncJob(jobId: string, regenerateThumbnails: boolean): Promise<void> {
     const bucket = requireEnv("S3_BUCKET");
     const workDir = path.join(tmpdir(), jobId);
 
@@ -134,9 +119,7 @@ async function processResyncJob(
 
             const probe = await runFfprobe(localPath);
             const tags = probe.format.tags ?? {};
-            const duration = probe.format.duration
-                ? Number(probe.format.duration)
-                : 0;
+            const duration = probe.format.duration ? Number(probe.format.duration) : 0;
             const audioInfo = await probeAudioFile(localPath);
 
             const probedTitle = tags.title;
@@ -177,12 +160,11 @@ async function processResyncJob(
                 }
                 existingRow.durationSeconds = Math.round(duration);
                 existingRow.fileKey = key;
-                existingRow.codec = audioInfo.codec ?? undefined;
-                existingRow.bitrateKbps = audioInfo.bitrateKbps ?? undefined;
-                existingRow.sampleRateHz = audioInfo.sampleRateHz ?? undefined;
+                existingRow.codec = audioInfo.codec ?? null;
+                existingRow.bitrateKbps = audioInfo.bitrateKbps ?? null;
+                existingRow.sampleRateHz = audioInfo.sampleRateHz ?? null;
                 if (regenerateThumbnails || finalThumbnailKey) {
-                    existingRow.thumbnailKey =
-                        finalThumbnailKey || existingRow.thumbnailKey;
+                    existingRow.thumbnailKey = finalThumbnailKey || existingRow.thumbnailKey;
                 }
                 await musicRepository.save(existingRow);
             } else {
@@ -197,9 +179,9 @@ async function processResyncJob(
                     durationSeconds: Math.round(duration),
                     fileKey: key,
                     thumbnailKey: finalThumbnailKey,
-                    codec: audioInfo.codec ?? undefined,
-                    bitrateKbps: audioInfo.bitrateKbps ?? undefined,
-                    sampleRateHz: audioInfo.sampleRateHz ?? undefined,
+                    codec: audioInfo.codec ?? null,
+                    bitrateKbps: audioInfo.bitrateKbps ?? null,
+                    sampleRateHz: audioInfo.sampleRateHz ?? null,
                 });
                 await musicRepository.save(music);
             }

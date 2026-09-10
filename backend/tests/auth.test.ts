@@ -1,8 +1,5 @@
-import { describe, expect, it, afterEach } from "vitest";
-import {
-    getMinPasswordLength,
-    validatePasswordLength,
-} from "../src/services/auth";
+import { afterEach, describe, expect, it } from "vitest";
+import { getMinPasswordLength, validatePasswordLength } from "../src/services/auth";
 
 describe("password length policy", () => {
     const originalEnv = process.env.PASSWORD_MIN_LENGTH;
@@ -37,9 +34,7 @@ describe("password length policy", () => {
 
     it("rejects a password shorter than the minimum", () => {
         process.env.PASSWORD_MIN_LENGTH = "8";
-        expect(validatePasswordLength("short")).toContain(
-            "at least 8 characters",
-        );
+        expect(validatePasswordLength("short")).toContain("at least 8 characters");
     });
 
     it("accepts a password meeting the minimum", () => {

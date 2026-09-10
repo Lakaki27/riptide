@@ -2,8 +2,9 @@ import { Router } from "express";
 import { AppDataSource } from "../data-source";
 import { Music } from "../entities/Music";
 import { Playlist } from "../entities/Playlist";
-import { withThumbnailUrl } from "../services/media";
 import { requireAdmin } from "../middleware/auth";
+import { withThumbnailUrl } from "../services/media";
+import { getParamAndAssertString } from "../utils/getParamAndAssertString";
 
 const router = Router();
 const playlistRepository = AppDataSource.getRepository(Playlist);
@@ -35,7 +36,11 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid playlist id" });
+    }
 
     const playlist = await playlistRepository.findOne({
         where: { id },
@@ -57,8 +62,12 @@ router.get("/:id", async (req, res) => {
 });
 
 router.patch("/:id", requireAdmin, async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
     const { name } = req.body;
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid playlist id" });
+    }
 
     const playlist = await playlistRepository.findOne({ where: { id } });
 
@@ -76,7 +85,11 @@ router.patch("/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/:id", requireAdmin, async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid playlist id" });
+    }
 
     const playlist = await playlistRepository.findOne({ where: { id } });
 
@@ -90,8 +103,12 @@ router.delete("/:id", requireAdmin, async (req, res) => {
 });
 
 router.post("/:id", requireAdmin, async (req, res) => {
-    const { id } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
     const { songId } = req.body;
+
+    if (!id) {
+        return res.status(400).json({ error: "invalid playlist id" });
+    }
 
     const playlist = await playlistRepository.findOne({
         where: { id },
@@ -109,20 +126,20 @@ router.post("/:id", requireAdmin, async (req, res) => {
 
     const alreadyIn = playlist.musics.some((m) => m.id === songId);
     if (alreadyIn) {
-        return res
-            .status(409)
-            .json({ error: "song is already in this playlist" });
+        return res.status(409).json({ error: "song is already in this playlist" });
     }
 
-    await AppDataSource.createQueryBuilder()
-        .relation(Playlist, "musics")
-        .of(id)
-        .add(songId);
+    await AppDataSource.createQueryBuilder().relation(Playlist, "musics").of(id).add(songId);
     return res.sendStatus(204);
 });
 
 router.delete("/:id/musics/:musicId", requireAdmin, async (req, res) => {
-    const { id, musicId } = req.params;
+    const id = getParamAndAssertString(req.params, "id");
+    const musicId = getParamAndAssertString(req.params, "musicId");
+
+    if (!id || !musicId) {
+        return res.status(400).json({ error: "invalid playlist or music id" });
+    }
 
     const playlist = await playlistRepository.findOne({ where: { id } });
 
@@ -130,10 +147,7 @@ router.delete("/:id/musics/:musicId", requireAdmin, async (req, res) => {
         return res.status(404).json({ error: "playlist not found" });
     }
 
-    await AppDataSource.createQueryBuilder()
-        .relation(Playlist, "musics")
-        .of(id)
-        .remove(musicId);
+    await AppDataSource.createQueryBuilder().relation(Playlist, "musics").of(id).remove(musicId);
 
     res.sendStatus(204);
 });

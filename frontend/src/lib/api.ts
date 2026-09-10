@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
-import { authStore } from "./stores/auth";
 import { goto } from "$app/navigation";
+import { authStore } from "./stores/auth";
 
 interface ApiOptions extends RequestInit {
     skipAuth?: boolean;
@@ -29,10 +29,7 @@ async function rawFetch(path: string, options: ApiOptions): Promise<Response> {
     });
 }
 
-export async function apiFetch<T>(
-    path: string,
-    options: ApiOptions = {},
-): Promise<T> {
+export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
     let response = await rawFetch(path, options);
 
     if (response.status === 401 && !options.skipAuth) {
@@ -47,12 +44,8 @@ export async function apiFetch<T>(
     }
 
     if (!response.ok) {
-        const errorBody = await response
-            .json()
-            .catch(() => ({ error: "unknown error" }));
-        throw new Error(
-            errorBody.error ?? `request failed with status ${response.status}`,
-        );
+        const errorBody = await response.json().catch(() => ({ error: "unknown error" }));
+        throw new Error(errorBody.error ?? `request failed with status ${response.status}`);
     }
 
     if (response.status === 204) return undefined as T;

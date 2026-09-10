@@ -1,5 +1,5 @@
-import swaggerUi from "swagger-ui-express";
 import type { Express } from "express";
+import swaggerUi from "swagger-ui-express";
 import spec from "./docs/openapi.json";
 
 export function setupDocs(app: Express) {

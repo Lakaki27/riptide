@@ -1,16 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 import { getUserById, verifyToken } from "../services/auth";
 
-export async function requireAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     if (!header?.startsWith("Bearer ")) {
-        return res
-            .status(401)
-            .json({ error: "missing or invalid authorization header" });
+        return res.status(401).json({ error: "missing or invalid authorization header" });
     }
     const token = header.slice("Bearer ".length);
     try {
