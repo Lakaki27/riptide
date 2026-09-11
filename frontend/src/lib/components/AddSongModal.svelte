@@ -1,135 +1,144 @@
 <script lang="ts">
-import { apiFetch } from "$lib/api";
-import { downloadsStore } from "$lib/stores/downloads";
+    import { apiFetch } from "$lib/api";
+    import { downloadsStore } from "$lib/stores/downloads";
 
-interface Props {
-    onClose: () => void;
-}
-
-let { onClose }: Props = $props();
-
-let mode = $state<"url" | "file">("url");
-let url = $state("");
-let step = $state<"input" | "loading" | "review">("input");
-let previewTitle = $state("");
-let previewArtist = $state("");
-let previewThumbnail = $state<string | null>(null);
-let error = $state("");
-
-let selectedFiles = $state<File[]>([]);
-let uploading = $state(false);
-let isDragging = $state(false);
-let fileInputEl: HTMLInputElement;
-
-async function handleUrlSubmit(e: Event) {
-    e.preventDefault();
-    if (!url.trim()) return;
-
-    step = "loading";
-    error = "";
-
-    try {
-        const preview = await apiFetch<{
-            title: string;
-            artist: string;
-            thumbnailUrl: string | null;
-        }>("/downloads/preview", {
-            method: "POST",
-            body: JSON.stringify({ url }),
-        });
-        previewTitle = preview.title;
-        previewArtist = preview.artist;
-        previewThumbnail = preview.thumbnailUrl;
-        step = "review";
-    } catch {
-        error = "Could not fetch video info";
-        step = "input";
-    }
-}
-
-async function handleConfirmUrl() {
-    try {
-        await downloadsStore.start(url, {
-            title: previewTitle,
-            artist: previewArtist,
-        });
-        onClose();
-    } catch {
-        error = "Could not start download";
-    }
-}
-
-function addFiles(fileList: FileList | File[]) {
-    const incoming = Array.from(fileList).filter((f) => f.type.startsWith("audio/"));
-    const existingKeys = new Set(selectedFiles.map((f) => `${f.name}-${f.size}`));
-    const deduped = incoming.filter((f) => !existingKeys.has(`${f.name}-${f.size}`));
-    selectedFiles = [...selectedFiles, ...deduped];
-}
-
-function removeFile(index: number) {
-    selectedFiles = selectedFiles.filter((_, i) => i !== index);
-}
-
-function formatSize(bytes: number): string {
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function onDragOver(e: DragEvent) {
-    e.preventDefault();
-    isDragging = true;
-}
-
-function onDragLeave(e: DragEvent) {
-    e.preventDefault();
-    isDragging = false;
-}
-
-function onDrop(e: DragEvent) {
-    e.preventDefault();
-    isDragging = false;
-    if (e.dataTransfer?.files) {
-        addFiles(e.dataTransfer.files);
-    }
-}
-
-function onFileInputChange(e: Event) {
-    const target = e.currentTarget as HTMLInputElement;
-    if (target.files) {
-        addFiles(target.files);
-    }
-    target.value = "";
-}
-
-async function handleFileUpload() {
-    if (selectedFiles.length === 0) return;
-
-    uploading = true;
-    error = "";
-
-    const formData = new FormData();
-    for (const file of selectedFiles) {
-        formData.append("files", file);
+    interface Props {
+        onClose: () => void;
     }
 
-    try {
-        const { jobIds } = await apiFetch<{ jobIds: string[] }>("/uploads", {
-            method: "POST",
-            body: formData,
-            skipJsonContentType: true,
-        });
+    let { onClose }: Props = $props();
 
-        jobIds.forEach((jobId, i) => {
-            downloadsStore.trackExisting(jobId, selectedFiles[i].name);
-        });
-        selectedFiles = [];
-        onClose();
-    } catch {
-        error = "Upload failed";
-    } finally {
-        uploading = false;
+    let mode = $state<"url" | "file">("url");
+    let url = $state("");
+    let step = $state<"input" | "loading" | "review">("input");
+    let previewTitle = $state("");
+    let previewArtist = $state("");
+    let previewThumbnail = $state<string | null>(null);
+    let error = $state("");
+
+    let selectedFiles = $state<File[]>([]);
+    let uploading = $state(false);
+    let isDragging = $state(false);
+    let fileInputEl: HTMLInputElement;
+
+    async function handleUrlSubmit(e: Event) {
+        e.preventDefault();
+        if (!url.trim()) return;
+
+        step = "loading";
+        error = "";
+
+        try {
+            const preview = await apiFetch<{
+                title: string;
+                artist: string;
+                thumbnailUrl: string | null;
+            }>("/downloads/preview", {
+                method: "POST",
+                body: JSON.stringify({ url }),
+            });
+            previewTitle = preview.title;
+            previewArtist = preview.artist;
+            previewThumbnail = preview.thumbnailUrl;
+            step = "review";
+        } catch {
+            error = "Could not fetch video info";
+            step = "input";
+        }
     }
-}
+
+    async function handleConfirmUrl() {
+        try {
+            await downloadsStore.start(url, {
+                title: previewTitle,
+                artist: previewArtist,
+            });
+            onClose();
+        } catch {
+            error = "Could not start download";
+        }
+    }
+
+    function addFiles(fileList: FileList | File[]) {
+        const incoming = Array.from(fileList).filter((f) =>
+            f.type.startsWith("audio/"),
+        );
+        const existingKeys = new Set(
+            selectedFiles.map((f) => `${f.name}-${f.size}`),
+        );
+        const deduped = incoming.filter(
+            (f) => !existingKeys.has(`${f.name}-${f.size}`),
+        );
+        selectedFiles = [...selectedFiles, ...deduped];
+    }
+
+    function removeFile(index: number) {
+        selectedFiles = selectedFiles.filter((_, i) => i !== index);
+    }
+
+    function formatSize(bytes: number): string {
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function onDragOver(e: DragEvent) {
+        e.preventDefault();
+        isDragging = true;
+    }
+
+    function onDragLeave(e: DragEvent) {
+        e.preventDefault();
+        isDragging = false;
+    }
+
+    function onDrop(e: DragEvent) {
+        e.preventDefault();
+        isDragging = false;
+        if (e.dataTransfer?.files) {
+            addFiles(e.dataTransfer.files);
+        }
+    }
+
+    function onFileInputChange(e: Event) {
+        const target = e.currentTarget as HTMLInputElement;
+        if (target.files) {
+            addFiles(target.files);
+        }
+        target.value = "";
+    }
+
+    async function handleFileUpload() {
+        if (selectedFiles.length === 0) return;
+
+        uploading = true;
+        error = "";
+
+        const formData = new FormData();
+        for (const file of selectedFiles) {
+            formData.append("files", file);
+        }
+
+        try {
+            const { jobIds } = await apiFetch<{ jobIds: string[] }>(
+                "/uploads",
+                {
+                    method: "POST",
+                    body: formData,
+                    skipJsonContentType: true,
+                },
+            );
+
+            jobIds.forEach((jobId, i) => {
+                downloadsStore.trackExisting(jobId, selectedFiles[i].name);
+            });
+            selectedFiles = [];
+            onClose();
+        } catch {
+            error = "Upload failed";
+        } finally {
+            uploading = false;
+        }
+    }
 </script>
 
 <div class="fixed inset-0 flex items-center justify-center bg-black/20">
@@ -193,7 +202,7 @@ async function handleFileUpload() {
                         bind:value={url}
                         placeholder="https://..."
                         required
-                        class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                        class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
                     />
                     {#if error}
                         <span class="text-sm text-red-500">{error}</span>
@@ -226,7 +235,7 @@ async function handleFileUpload() {
                         Title
                         <input
                             bind:value={previewTitle}
-                            class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                            class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)]"
                         />
                     </label>
                     <label
@@ -235,7 +244,7 @@ async function handleFileUpload() {
                         Artist
                         <input
                             bind:value={previewArtist}
-                            class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                            class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)]"
                         />
                     </label>
                     {#if error}
@@ -244,7 +253,7 @@ async function handleFileUpload() {
                     <div class="flex justify-end gap-2">
                         <button
                             onclick={() => (step = "input")}
-                            class="rounded-lg px-3 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                            class="rounded-lg px-3 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-violet-pale)]"
                         >
                             Back
                         </button>
@@ -266,8 +275,8 @@ async function handleFileUpload() {
                     ondragleave={onDragLeave}
                     ondrop={onDrop}
                     class="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors {isDragging
-                        ? 'border-[var(--color-accent)] bg-[var(--color-surface-hover)]'
-                        : 'border-[var(--color-border)] hover:bg-[var(--color-surface-hover)]'}"
+                        ? 'border-[var(--color-accent)] bg-[var(--color-violet-pale)]'
+                        : 'border-[var(--color-border)] hover:bg-[var(--color-violet-pale)]'}"
                 >
                     <i
                         class="bx bx-cloud-upload text-3xl text-[var(--color-text-muted)]"
@@ -292,7 +301,7 @@ async function handleFileUpload() {
                     >
                         {#each selectedFiles as file, i}
                             <div
-                                class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[var(--color-surface-hover)]"
+                                class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[var(--color-violet-pale)]"
                             >
                                 <i
                                     class="bx bx-music text-lg text-[var(--color-text-muted)]"

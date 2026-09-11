@@ -1,61 +1,71 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import MusicList from "$lib/components/MusicList.svelte";
-import { m } from "$lib/paraglide/messages";
-import { playerStore } from "$lib/stores/player";
-import { mobileQueueOpen } from "$lib/stores/ui";
-import type { Music } from "$lib/types";
+    import { goto } from "$app/navigation";
+    import MusicList from "$lib/components/MusicList.svelte";
+    import { m } from "$lib/paraglide/messages";
+    import { playerStore } from "$lib/stores/player";
+    import { mobileQueueOpen } from "$lib/stores/ui";
+    import type { Music } from "$lib/types";
 
-let searchQuery = $state("");
-let scrollContainer: HTMLElement;
+    let searchQuery = $state("");
+    let scrollContainer: HTMLElement;
 
-const indexedQueue = $derived($playerStore.queue.map((music, index) => ({ music, index })));
+    const indexedQueue = $derived(
+        $playerStore.queue.map((music, index) => ({ music, index })),
+    );
 
-const filteredIndexed = $derived(
-    searchQuery.trim()
-        ? indexedQueue.filter(
-              ({ music }) =>
-                  music.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  music.artist.name.toLowerCase().includes(searchQuery.toLowerCase()),
-          )
-        : indexedQueue,
-);
+    const filteredIndexed = $derived(
+        searchQuery.trim()
+            ? indexedQueue.filter(
+                  ({ music }) =>
+                      music.title
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                      music.artist.name
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()),
+              )
+            : indexedQueue,
+    );
 
-const filteredMusics = $derived(filteredIndexed.map((x) => x.music));
+    const filteredMusics = $derived(filteredIndexed.map((x) => x.music));
 
-function handlePlay(filteredIndex: number) {
-    const realIndex = filteredIndexed[filteredIndex]?.index;
-    if (realIndex !== undefined) playerStore.jumpTo(realIndex);
-}
+    function handlePlay(filteredIndex: number) {
+        const realIndex = filteredIndexed[filteredIndex]?.index;
+        if (realIndex !== undefined) playerStore.jumpTo(realIndex);
+    }
 
-function handleTitleNavigate(music: Music) {
-    $mobileQueueOpen = false;
-    goto(`/artists/${music.artist.id}`);
-}
+    function handleTitleNavigate(music: Music) {
+        $mobileQueueOpen = false;
+        goto(`/artists/${music.artist.id}`);
+    }
 
-$effect(() => {
-    const current = $playerStore.currentIndex;
-    if (!scrollContainer) return;
-    const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
-    if (!isScrollable) return;
-    const rowHeight = 48;
-    const targetTop = filteredIndexed.findIndex((x) => x.index === current) * rowHeight;
-    scrollContainer.scrollTo({ top: targetTop, behavior: "smooth" });
-});
+    $effect(() => {
+        const current = $playerStore.currentIndex;
+        if (!scrollContainer) return;
+        const isScrollable =
+            scrollContainer.scrollHeight > scrollContainer.clientHeight;
+        if (!isScrollable) return;
+        const rowHeight = 48;
+        const targetTop =
+            filteredIndexed.findIndex((x) => x.index === current) * rowHeight;
+        scrollContainer.scrollTo({ top: targetTop, behavior: "smooth" });
+    });
 </script>
 
 {#if $mobileQueueOpen}
     <div class="fixed inset-0 z-40 flex items-end bg-black/30 md:hidden">
         <div
-            class="flex h-3/4 w-full flex-col gap-3 rounded-t-2xl bg-white p-4"
+            class="flex h-3/4 w-full flex-col gap-3 rounded-t-2xl bg-[var(--color-surface)] p-4"
         >
             <div class="flex items-center justify-between">
-                <h2 class="text-sm font-medium text-neutral-900">
+                <h2
+                    class="text-sm font-medium text-[var(--color-text-primary)]"
+                >
                     {m["playing_next"]()}
                 </h2>
                 <button
                     onclick={() => ($mobileQueueOpen = false)}
-                    class="text-neutral-500"
+                    class="text-[var(--color-text-muted)]"
                 >
                     <i class="bx bx-x text-2xl"></i>
                 </button>
@@ -63,7 +73,7 @@ $effect(() => {
             <input
                 bind:value={searchQuery}
                 placeholder={m["search_queue"]()}
-                class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
             />
             <div class="flex-1 overflow-y-auto">
                 <MusicList
@@ -82,13 +92,15 @@ $effect(() => {
 {/if}
 
 <aside
-    class="hidden w-72 flex-col gap-3 border-l border-violet-100 bg-white p-4 md:flex"
+    class="hidden w-72 flex-col gap-3 border-l border-[var(--color-violet-pale)] bg-[var(--color-surface)] p-4 md:flex"
 >
-    <h2 class="text-sm font-medium text-neutral-900">{m["playing_next"]()}</h2>
+    <h2 class="text-sm font-medium text-[var(--color-text-primary)]">
+        {m["playing_next"]()}
+    </h2>
     <input
         bind:value={searchQuery}
         placeholder={m["search_queue"]()}
-        class="rounded-lg border border-violet-100 px-3 py-2 text-sm"
+        class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
     />
     <div bind:this={scrollContainer} class="flex-1 overflow-y-auto">
         <MusicList

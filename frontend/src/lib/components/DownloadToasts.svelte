@@ -1,27 +1,28 @@
 <script lang="ts">
-import { m } from "$lib/paraglide/messages";
-import { downloadsStore } from "$lib/stores/downloads";
-import { translateDynKey } from "$lib/utils/translateDynKey";
+    import { m } from "$lib/paraglide/messages";
+    import { downloadsStore } from "$lib/stores/downloads";
+    import { translateDynKey } from "$lib/utils/translateDynKey";
 
-function statusLabel(status: string): string {
-    return translateDynKey(`status_labels.${status}`) || status;
-}
+    function statusLabel(status: string): string {
+        return translateDynKey(`status_labels.${status}`) || status;
+    }
 </script>
 
 {#if $downloadsStore.length > 0}
     <div class="fixed bottom-20 right-6 flex flex-col gap-2 z-50">
         {#each $downloadsStore as job (job.id)}
             <div
-                class="flex w-72 items-center gap-3 rounded-lg bg-white p-3 shadow-md"
+                class="flex w-72 items-center gap-3 rounded-lg bg-[var(--color-surface)] p-3 shadow-md"
             >
                 <div class="flex flex-1 flex-col">
-                    <span class="truncate text-sm text-neutral-900"
+                    <span
+                        class="truncate text-sm text-[var(--color-text-primary)]"
                         >{job.url}</span
                     >
                     <span
                         class="text-sm {job.status === 'failed'
                             ? 'text-red-500'
-                            : 'text-neutral-500'}"
+                            : 'text-[var(--color-text-muted)]'}"
                     >
                         {statusLabel(job.status)}{job.error
                             ? `: ${job.error}`
@@ -30,12 +31,12 @@ function statusLabel(status: string): string {
                 </div>
                 {#if job.status !== "done" && job.status !== "failed"}
                     <div
-                        class="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-500"
+                        class="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-violet-pale)] border-t-[var(--color-accent)]"
                     ></div>
                 {:else}
                     <button
                         onclick={() => downloadsStore.dismiss(job.id)}
-                        class="text-neutral-400 hover:text-neutral-600"
+                        class="text-gray-400 hover:text-gray-600"
                     >
                         ✕
                     </button>

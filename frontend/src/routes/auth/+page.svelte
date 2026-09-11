@@ -1,61 +1,76 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import { authStore } from "$lib/stores/auth";
+    import { goto } from "$app/navigation";
+    import { apiFetch } from "$lib/api";
+    import { authStore } from "$lib/stores/auth";
+    import { onMount } from "svelte";
 
-let email = $state("");
-let password = $state("");
-let error = $state("");
-let loading = $state(false);
-let showForgotModal = $state(false);
+    let email = $state("");
+    let password = $state("");
+    let error = $state("");
+    let loading = $state(false);
+    let showForgotModal = $state(false);
 
-let resetToken = $state<string | null>(null);
-let newPassword = $state("");
-let confirmPassword = $state("");
-let resetError = $state("");
-let resetLoading = $state(false);
+    let resetToken = $state<string | null>(null);
+    let newPassword = $state("");
+    let confirmPassword = $state("");
+    let resetError = $state("");
+    let resetLoading = $state(false);
 
-async function handleSubmit(e: Event) {
-    e.preventDefault();
-    error = "";
-    loading = true;
+    let minPasswordLength = $state(0);
 
-    try {
-        const result = await authStore.login(email, password);
-        if (result.needsPasswordReset) {
-            resetToken = result.resetToken;
-        } else {
-            goto("/");
+    async function handleSubmit(e: Event) {
+        e.preventDefault();
+        error = "";
+        loading = true;
+
+        try {
+            const result = await authStore.login(email, password);
+            if (result.needsPasswordReset) {
+                resetToken = result.resetToken;
+            } else {
+                goto("/");
+            }
+        } catch (err) {
+            error =
+                err instanceof Error
+                    ? err.message
+                    : "Invalid email or password";
+        } finally {
+            loading = false;
         }
-    } catch (err) {
-        error = err instanceof Error ? err.message : "Invalid email or password";
-    } finally {
-        loading = false;
-    }
-}
-
-async function handleResetSubmit(e: Event) {
-    e.preventDefault();
-    resetError = "";
-
-    if (newPassword.length < 8) {
-        resetError = "Password must be at least 8 characters";
-        return;
-    }
-    if (newPassword !== confirmPassword) {
-        resetError = "Passwords do not match";
-        return;
     }
 
-    resetLoading = true;
-    try {
-        await authStore.completeReset(resetToken!, newPassword);
-        goto("/");
-    } catch (err) {
-        resetError = err instanceof Error ? err.message : "Failed to reset password";
-    } finally {
-        resetLoading = false;
+    async function handleResetSubmit(e: Event) {
+        e.preventDefault();
+        resetError = "";
+
+        if (newPassword.length < minPasswordLength) {
+            resetError = `Password must be at least {minPasswordLength} characters`;
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            resetError = "Passwords do not match";
+            return;
+        }
+
+        resetLoading = true;
+        try {
+            await authStore.completeReset(resetToken!, newPassword);
+            goto("/");
+        } catch (err) {
+            resetError =
+                err instanceof Error ? err.message : "Failed to reset password";
+        } finally {
+            resetLoading = false;
+        }
     }
-}
+
+    onMount(async () => {
+        const policy = await apiFetch<{ minLength: number }>(
+            "/auth/password-policy",
+        );
+        minPasswordLength = policy.minLength;
+    });
 </script>
 
 <div class="flex h-screen items-center justify-center bg-[var(--color-bg)]">
@@ -77,14 +92,14 @@ async function handleResetSubmit(e: Event) {
                 bind:value={newPassword}
                 placeholder="New password"
                 required
-                class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
             />
             <input
                 type="password"
                 bind:value={confirmPassword}
                 placeholder="Confirm new password"
                 required
-                class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
             />
 
             {#if resetError}
@@ -118,14 +133,14 @@ async function handleResetSubmit(e: Event) {
                 bind:value={email}
                 placeholder="Email"
                 required
-                class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
             />
             <input
                 type="password"
                 bind:value={password}
                 placeholder="Password"
                 required
-                class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
             />
 
             {#if error}

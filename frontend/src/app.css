@@ -2,14 +2,13 @@
 @import "boxicons/css/boxicons.min.css";
 
 :root {
-    --color-bg: oklch(96.9% 0.016 293.756);
-    --color-surface: #fff;
-    --color-surface-hover: oklch(94.3% 0.029 294.588);
-    --color-border: oklch(94.3% 0.029 294.588);
-    --color-text-primary: oklch(20.5% 0 none);
-    --color-text-muted: oklch(55.6% 0 none);
-    --color-accent: oklch(60.6% 0.25 292.717);
-    --color-accent-hover: oklch(54.1% 0.281 293.009);
+    --color-bg: var(--color-violet-100);
+    --color-surface: #ffffff;
+    --color-violet-pale: var(--color-violet-200);
+    --color-text-primary: var(--color-gray-900);
+    --color-text-muted: var(--color-gray-600);
+    --color-accent: var(--color-violet-600);
+    --color-accent-hover: var(--color-violet-700);
     --radius-card: 0.75rem;
     --radius-pill: 9999px;
     --transition-fast: 150ms ease;
@@ -17,14 +16,14 @@
 }
 
 :root[data-theme="dark"] {
-    --color-bg: #17131f;
-    --color-surface: #221d2e;
-    --color-surface-hover: #2d2740;
-    --color-border: #332c47;
+    --color-bg: #15111d;
+    --color-surface: #211a2d;
+    --color-violet-pale: #302640;
+    --color-border: #3a304e;
     --color-text-primary: #f3f0fa;
-    --color-text-muted: #a89fc2;
+    --color-text-muted: #958ba9;
     --color-accent: oklch(81.1% 0.111 293.571);
-    --color-accent-hover: oklch(81.1% 0.111 293.571);
+    --color-accent-hover: oklch(86% 0.105 293.571);
 }
 
 button,
@@ -34,6 +33,7 @@ a,
 }
 
 * {
-    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-property:
+        color, background-color, border-color, box-shadow, transform;
     transition-duration: var(--transition-fast);
 }

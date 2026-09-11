@@ -1,7 +1,7 @@
 REGISTRY := ghcr.io/lakaki27
 BACKEND_IMAGE := $(REGISTRY)/riptide-backend
 FRONTEND_IMAGE := $(REGISTRY)/riptide-frontend
-NIXOS_FLAKE_DIR := /home/leo/Codebase/Perso/maelstrom
+NIXOS_FLAKE_DIR := /home/leo/Documents/Codebase/Perso/maelstrom
 
 .PHONY: check check-back check-front check-lint check-lint-back check-lint-front lint lint-back lint-front test test-back test-front ci deploy build-images push-images
 
@@ -59,4 +59,4 @@ push-images: build-images
 	docker push $(FRONTEND_IMAGE):latest
 
 deploy: push-images
-	cd $(NIXOS_FLAKE_DIR) && nix run github:serokell/deploy-rs -- .#maelstrom
+	cd $(NIXOS_FLAKE_DIR) && nix run .#deploy-rs -- .#maelstrom

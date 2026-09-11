@@ -1,40 +1,40 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import SongMenu from "$lib/components/SongMenu.svelte";
-import type { Music } from "$lib/types";
+    import { goto } from "$app/navigation";
+    import SongMenu from "$lib/components/SongMenu.svelte";
+    import type { Music } from "$lib/types";
 
-interface Props {
-    music: Music;
-    onPlay: () => void;
-    playlistId?: string;
-    onRemoved?: () => void;
-    active?: boolean;
-    compact?: boolean;
-    showMenu?: boolean;
-    onTitleNavigate?: (music: Music) => void;
-}
-
-let {
-    music,
-    onPlay,
-    playlistId,
-    onRemoved,
-    active = false,
-    compact = false,
-    showMenu = true,
-    onTitleNavigate,
-}: Props = $props();
-
-function stop(e: Event) {
-    e.stopPropagation();
-}
-
-function handleTitleClick(e: Event) {
-    if (onTitleNavigate) {
-        stop(e);
-        onTitleNavigate(music);
+    interface Props {
+        music: Music;
+        onPlay: () => void;
+        playlistId?: string;
+        onRemoved?: () => void;
+        active?: boolean;
+        compact?: boolean;
+        showMenu?: boolean;
+        onTitleNavigate?: (music: Music) => void;
     }
-}
+
+    let {
+        music,
+        onPlay,
+        playlistId,
+        onRemoved,
+        active = false,
+        compact = false,
+        showMenu = true,
+        onTitleNavigate,
+    }: Props = $props();
+
+    function stop(e: Event) {
+        e.stopPropagation();
+    }
+
+    function handleTitleClick(e: Event) {
+        if (onTitleNavigate) {
+            stop(e);
+            onTitleNavigate(music);
+        }
+    }
 </script>
 
 <div
@@ -42,9 +42,10 @@ function handleTitleClick(e: Event) {
     onkeydown={(e) => e.key === "Enter" && onPlay()}
     role="button"
     tabindex="0"
-    class="flex items-center gap-3 rounded-lg px-2 py-2 {active
-        ? 'bg-violet-100'
-        : 'hover:bg-violet-100'}"
+    class={[
+        "flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-[var(--color-violet-pale)]",
+        { "bg-[var(--color-violet-pale)]": active },
+    ]}
 >
     <img
         src={music.thumbnailUrl ?? "/placeholder.png"}
@@ -58,14 +59,16 @@ function handleTitleClick(e: Event) {
         {#if onTitleNavigate}
             <button
                 onclick={handleTitleClick}
-                class="max-w-full self-start truncate text-left text-sm text-neutral-900 hover:underline"
+                class="max-w-full self-start truncate text-left text-sm text-[var(--color-text-primary)] hover:underline"
             >
                 {music.title}
             </button>
         {:else}
-            <span class="block w-full truncate text-sm text-neutral-900"
-                >{music.title}</span
+            <span
+                class="block w-full truncate text-sm text-[var(--color-text-primary)]"
             >
+                {music.title}
+            </span>
         {/if}
 
         <button
@@ -73,13 +76,16 @@ function handleTitleClick(e: Event) {
                 stop(e);
                 goto(`/artists/${music.artist.id}`);
             }}
-            class="hidden max-w-full self-start truncate text-left text-sm text-neutral-500 hover:text-violet-600 hover:underline md:inline-block"
+            class="hidden max-w-full self-start truncate text-left text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:underline md:inline-block"
         >
             {music.artist.name}
         </button>
-        <span class="block w-full truncate text-sm text-neutral-500 md:hidden"
-            >{music.artist.name}</span
+
+        <span
+            class="block w-full truncate text-sm text-[var(--color-text-muted)] md:hidden"
         >
+            {music.artist.name}
+        </span>
     </div>
 
     {#if showMenu}
