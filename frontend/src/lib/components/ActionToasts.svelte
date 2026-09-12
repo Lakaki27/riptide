@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { toastStore } from "$lib/stores/toast";
+import { toastStore } from "$lib/stores/toast";
 </script>
 
 {#if $toastStore.length > 0}
@@ -8,7 +8,7 @@
     >
         {#each $toastStore as toast (toast.id)}
             <div
-                class="rounded-full bg-[var(--color-text-primary)] px-4 py-2 text-sm text-white shadow-lg"
+                class="rounded-full bg-(--color-text-primary) px-4 py-2 text-sm text-white shadow-lg"
             >
                 {toast.message}
             </div>

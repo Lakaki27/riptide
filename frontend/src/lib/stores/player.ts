@@ -11,6 +11,7 @@ interface PlayerState {
     audioUrl: string | null;
     isPlaying: boolean;
     mode: PlayMode;
+    sourceId: string | null;
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -20,7 +21,10 @@ function shuffle<T>(items: T[]): T[] {
     while (remaining.length > 0) {
         const index = Math.floor(Math.random() * remaining.length);
         const [picked] = remaining.splice(index, 1);
-        if (picked !== undefined) result.push(picked);
+
+        if (picked !== undefined) {
+            result.push(picked);
+        }
     }
 
     return result;
@@ -34,6 +38,7 @@ function createPlayerStore() {
         audioUrl: null,
         isPlaying: false,
         mode: "normal",
+        sourceId: null,
     });
 
     async function playIndex(index: number) {
@@ -77,7 +82,7 @@ function createPlayerStore() {
 
     return {
         subscribe,
-        setQueue(tracks: Music[], startIndex = 0) {
+        setQueue(tracks: Music[], startIndex = 0, sourceId: string | null = null) {
             const state = get(playerStore);
             const queue = state.mode === "randomize" ? shuffle(tracks) : tracks;
 
@@ -85,10 +90,30 @@ function createPlayerStore() {
                 ...s,
                 queue,
                 originalQueue: tracks,
+                sourceId,
             }));
 
             const actualStart = queue.findIndex((t) => t.id === tracks[startIndex]?.id);
+
             playIndex(actualStart >= 0 ? actualStart : 0);
+        },
+        playFromList(tracks: Music[], track: Music, sourceId: string) {
+            const state = get(playerStore);
+
+            if (state.sourceId === sourceId) {
+                const existingIndex = state.queue.findIndex((t) => t.id === track.id);
+
+                if (existingIndex >= 0) {
+                    playIndex(existingIndex);
+                    return;
+                }
+            }
+
+            const index = tracks.findIndex((t) => t.id === track.id);
+
+            if (index >= 0) {
+                playerStore.setQueue(tracks, index, sourceId);
+            }
         },
         playFromSearch(track: Music) {
             const state = get(playerStore);
@@ -165,6 +190,33 @@ function createPlayerStore() {
                     currentIndex: newCurrentIndex >= 0 ? newCurrentIndex : s.currentIndex,
                 };
             });
+        },
+        sortQueue(tracks: Music[]) {
+            const state = get(playerStore);
+
+            // Sorting does not affect random/shuffle mode.
+            if (state.mode === "randomize") {
+                return;
+            }
+
+            const currentTrack = state.queue[state.currentIndex];
+
+            if (!currentTrack) {
+                return;
+            }
+
+            const currentIndex = tracks.findIndex((track) => track.id === currentTrack.id);
+
+            if (currentIndex < 0) {
+                return;
+            }
+
+            update((s) => ({
+                ...s,
+                queue: [...tracks],
+                originalQueue: [...tracks],
+                currentIndex,
+            }));
         },
         jumpTo(index: number) {
             playIndex(index);

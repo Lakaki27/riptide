@@ -1,105 +1,99 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-    import { apiFetch } from "$lib/api";
-    import { authStore } from "$lib/stores/auth";
-    import { onMount } from "svelte";
+import { onMount } from "svelte";
+import { goto } from "$app/navigation";
+import { apiFetch } from "$lib/api";
+import { m } from "$lib/paraglide/messages";
+import { authStore } from "$lib/stores/auth";
 
-    let email = $state("");
-    let password = $state("");
-    let error = $state("");
-    let loading = $state(false);
-    let showForgotModal = $state(false);
+let email = $state("");
+let password = $state("");
+let error = $state("");
+let loading = $state(false);
+let showForgotModal = $state(false);
 
-    let resetToken = $state<string | null>(null);
-    let newPassword = $state("");
-    let confirmPassword = $state("");
-    let resetError = $state("");
-    let resetLoading = $state(false);
+let resetToken = $state<string | null>(null);
+let newPassword = $state("");
+let confirmPassword = $state("");
+let resetError = $state("");
+let resetLoading = $state(false);
 
-    let minPasswordLength = $state(0);
+let minPasswordLength = $state(0);
 
-    async function handleSubmit(e: Event) {
-        e.preventDefault();
-        error = "";
-        loading = true;
+async function handleSubmit(e: Event) {
+    e.preventDefault();
+    error = "";
+    loading = true;
 
-        try {
-            const result = await authStore.login(email, password);
-            if (result.needsPasswordReset) {
-                resetToken = result.resetToken;
-            } else {
-                goto("/");
-            }
-        } catch (err) {
-            error =
-                err instanceof Error
-                    ? err.message
-                    : "Invalid email or password";
-        } finally {
-            loading = false;
-        }
-    }
-
-    async function handleResetSubmit(e: Event) {
-        e.preventDefault();
-        resetError = "";
-
-        if (newPassword.length < minPasswordLength) {
-            resetError = `Password must be at least {minPasswordLength} characters`;
-            return;
-        }
-        if (newPassword !== confirmPassword) {
-            resetError = "Passwords do not match";
-            return;
-        }
-
-        resetLoading = true;
-        try {
-            await authStore.completeReset(resetToken!, newPassword);
+    try {
+        const result = await authStore.login(email, password);
+        if (result.needsPasswordReset) {
+            resetToken = result.resetToken;
+        } else {
             goto("/");
-        } catch (err) {
-            resetError =
-                err instanceof Error ? err.message : "Failed to reset password";
-        } finally {
-            resetLoading = false;
         }
+    } catch (err) {
+        error = err instanceof Error ? err.message : "Invalid email or password";
+    } finally {
+        loading = false;
+    }
+}
+
+async function handleResetSubmit(e: Event) {
+    e.preventDefault();
+    resetError = "";
+
+    if (newPassword.length < minPasswordLength) {
+        resetError = `Password must be at least {minPasswordLength} characters`;
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+        resetError = "Passwords do not match";
+        return;
     }
 
-    onMount(async () => {
-        const policy = await apiFetch<{ minLength: number }>(
-            "/auth/password-policy",
-        );
-        minPasswordLength = policy.minLength;
-    });
+    resetLoading = true;
+    try {
+        await authStore.completeReset(resetToken!, newPassword);
+        goto("/");
+    } catch (err) {
+        resetError = err instanceof Error ? err.message : "Failed to reset password";
+    } finally {
+        resetLoading = false;
+    }
+}
+
+onMount(async () => {
+    const policy = await apiFetch<{ minLength: number }>("/auth/password-policy");
+    minPasswordLength = policy.minLength;
+});
 </script>
 
-<div class="flex h-screen items-center justify-center bg-[var(--color-bg)]">
+<div class="flex h-screen items-center justify-center bg-(--color-bg)">
     {#if resetToken}
         <form
             onsubmit={handleResetSubmit}
-            class="flex w-80 flex-col gap-3 rounded-xl bg-[var(--color-surface)] p-6 shadow-sm"
+            class="flex w-80 flex-col gap-3 rounded-xl bg-(--color-surface) p-6 shadow-sm"
         >
-            <h1 class="mb-1 text-xl text-[var(--color-text-primary)]">
-                Set a new password
+            <h1 class="mb-1 text-xl text-(--color-text-primary)">
+                {m["set_a_new_password"]()}
             </h1>
-            <p class="mb-2 text-sm text-[var(--color-text-muted)]">
-                Your password was reset by an administrator. Choose a new one to
-                continue.
+            <p class="mb-2 text-sm text-(--color-text-muted)">
+                {m["your_password_was_reset"]()}
             </p>
 
             <input
                 type="password"
                 bind:value={newPassword}
-                placeholder="New password"
+                placeholder={m["new_password"]()}
                 required
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
             />
             <input
                 type="password"
                 bind:value={confirmPassword}
-                placeholder="Confirm new password"
+                placeholder={m["new_password_confirm"]()}
                 required
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
             />
 
             {#if resetError}
@@ -109,38 +103,38 @@
             <button
                 type="submit"
                 disabled={resetLoading}
-                class="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+                class="rounded-lg bg-(--color-accent) px-3 py-2 text-sm text-white hover:bg-(--color-accent-hover) disabled:opacity-50"
             >
-                {resetLoading ? "Saving..." : "Set password"}
+                {resetLoading ? m["saving"]() : m["set_password"]()}
             </button>
         </form>
     {:else}
         <form
             onsubmit={handleSubmit}
-            class="flex w-80 flex-col items-center gap-3 rounded-xl bg-[var(--color-surface)] p-6 shadow-sm"
+            class="flex w-80 flex-col items-center gap-3 rounded-xl bg-(--color-surface) p-6 shadow-sm"
         >
             <img
                 src="/logo.png"
                 alt="Riptide"
                 class="mb-2 h-16 w-16 rounded-2xl"
             />
-            <h1 class="mb-2 text-xl text-[var(--color-text-primary)]">
-                Sign in
+            <h1 class="mb-2 text-xl text-(--color-text-primary)">
+                {m["sign_in"]()}
             </h1>
 
             <input
                 type="email"
                 bind:value={email}
-                placeholder="Email"
+                placeholder={m["email"]()}
                 required
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
             />
             <input
                 type="password"
                 bind:value={password}
-                placeholder="Password"
+                placeholder={m["password"]()}
                 required
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
             />
 
             {#if error}
@@ -150,17 +144,17 @@
             <button
                 type="submit"
                 disabled={loading}
-                class="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+                class="rounded-lg bg-(--color-accent) px-3 py-2 text-sm text-white hover:bg-(--color-accent-hover) disabled:opacity-50"
             >
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? m["signing_in"]() : m["sign_in"]()}
             </button>
 
             <button
                 type="button"
                 onclick={() => (showForgotModal = true)}
-                class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
+                class="text-sm text-(--color-text-muted) hover:text-(--color-accent)"
             >
-                Forgot password?
+                {m["forgot_password_q"]()}
             </button>
         </form>
     {/if}
@@ -169,19 +163,19 @@
 {#if showForgotModal}
     <div class="fixed inset-0 flex items-center justify-center bg-black/20">
         <div
-            class="flex w-80 flex-col gap-3 rounded-xl bg-[var(--color-surface)] p-6"
+            class="flex w-80 flex-col gap-3 rounded-xl bg-(--color-surface) p-6"
         >
-            <h2 class="text-lg text-[var(--color-text-primary)]">
-                Forgot password
+            <h2 class="text-lg text-(--color-text-primary)">
+                {m["forgot_password"]()}
             </h2>
-            <p class="text-sm text-[var(--color-text-muted)]">
-                Please contact your administrator to have your password reset.
+            <p class="text-sm text-(--color-text-muted)">
+                {m["forgot_password_text"]()}
             </p>
             <button
                 onclick={() => (showForgotModal = false)}
-                class="rounded-lg bg-[var(--color-accent)] px-3 py-2 text-sm text-white hover:bg-[var(--color-accent-hover)]"
+                class="rounded-lg bg-(--color-accent) px-3 py-2 text-sm text-white hover:bg-(--color-accent-hover)"
             >
-                Got it
+                {m["got_it"]()}
             </button>
         </div>
     </div>

@@ -1,277 +1,265 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { apiFetch } from "$lib/api";
+import { onMount } from "svelte";
+import { apiFetch } from "$lib/api";
+import { m } from "$lib/paraglide/messages";
 
-    interface TopSong {
-        musicId: string;
-        title: string;
-        playCount: string;
+interface TopSong {
+    musicId: string;
+    title: string;
+    playCount: string;
+}
+
+interface TopArtist {
+    artistId: string;
+    name: string;
+    playCount: string;
+}
+
+interface HeatmapDay {
+    date: string;
+    count: number;
+}
+
+interface HeatmapResponse {
+    results: HeatmapDay[];
+    startDate: string;
+    endDate: string;
+}
+
+let topSongs = $state<TopSong[]>([]);
+let topArtists = $state<TopArtist[]>([]);
+let heatmapDays = $state<{ date: string; count: number }[]>([]);
+let earliestDate = $state<string | null>(null);
+let selectedRange = $state<"month" | "year" | "all">("year");
+let selectedYear = $state(new Date().getFullYear());
+let scope = $state<"me" | "global">("me");
+let loading = $state(true);
+let heatmapLoading = $state(false);
+let scrollContainer: HTMLElement;
+
+let tooltip = $state<{
+    date: string;
+    plays: string;
+    x: number;
+    y: number;
+} | null>(null);
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+});
+
+function formatDateLong(iso: string): string {
+    const [y, m, d] = iso.split("-").map(Number);
+    return dateFormatter.format(new Date(y, m - 1, d));
+}
+
+function toDateString(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
+const availableYears = $derived.by(() => {
+    if (!earliestDate) return [new Date().getFullYear()];
+    const startYear = Number(earliestDate.slice(0, 4));
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    for (let y = currentYear; y >= startYear; y--) years.push(y);
+    return years;
+});
+
+const weeks = $derived.by(() => {
+    if (heatmapDays.length === 0) return [];
+
+    const first = heatmapDays[0].date;
+    const last = heatmapDays[heatmapDays.length - 1].date;
+
+    const [fy, fm, fd] = first.split("-").map(Number);
+    const [ly, lm, ld] = last.split("-").map(Number);
+
+    const countByDate = new Map(heatmapDays.map((d) => [d.date, d.count]));
+
+    const start = new Date(fy, fm - 1, fd);
+    start.setDate(start.getDate() - start.getDay());
+
+    const end = new Date(ly, lm - 1, ld);
+
+    const days: { date: string; count: number }[] = [];
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+        const iso = toDateString(cursor);
+        days.push({ date: iso, count: countByDate.get(iso) ?? 0 });
+        cursor.setDate(cursor.getDate() + 1);
     }
 
-    interface TopArtist {
-        artistId: string;
-        name: string;
-        playCount: string;
+    const result: { date: string; count: number }[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+        result.push(days.slice(i, i + 7));
     }
+    return result;
+});
 
-    interface HeatmapDay {
-        date: string;
-        count: number;
+function intensity(count: number): string {
+    if (count === 0) return "bg-[var(--color-violet-pale)]";
+    if (count < 3) return "bg-violet-300";
+    if (count < 6) return "bg-violet-500";
+    if (count < 10) return "bg-violet-700";
+    return "bg-violet-900";
+}
+
+function fillGaps(startDate: string, endDate: string, results: HeatmapDay[]) {
+    const countByDate = new Map(results.map((d) => [d.date, d.count]));
+    const [sy, sm, sd] = startDate.split("-").map(Number);
+    const [ey, em, ed] = endDate.split("-").map(Number);
+    const cursor = new Date(sy, sm - 1, sd);
+    const end = new Date(ey, em - 1, ed);
+    const days: { date: string; count: number }[] = [];
+
+    while (cursor <= end) {
+        const iso = toDateString(cursor);
+        days.push({ date: iso, count: countByDate.get(iso) ?? 0 });
+        cursor.setDate(cursor.getDate() + 1);
     }
+    return days;
+}
 
-    interface HeatmapResponse {
-        results: HeatmapDay[];
-        startDate: string;
-        endDate: string;
-    }
+function computeRange(): { startDate: string; endDate: string } {
+    const today = new Date();
+    const endDate = toDateString(today);
 
-    let topSongs = $state<TopSong[]>([]);
-    let topArtists = $state<TopArtist[]>([]);
-    let heatmapDays = $state<{ date: string; count: number }[]>([]);
-    let earliestDate = $state<string | null>(null);
-    let selectedRange = $state<"month" | "year" | "all">("year");
-    let selectedYear = $state(new Date().getFullYear());
-    let scope = $state<"me" | "global">("me");
-    let loading = $state(true);
-    let heatmapLoading = $state(false);
-    let scrollContainer: HTMLElement;
-
-    let tooltip = $state<{
-        date: string;
-        plays: string;
-        x: number;
-        y: number;
-    } | null>(null);
-
-    const dateFormatter = new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
-
-    function formatDateLong(iso: string): string {
-        const [y, m, d] = iso.split("-").map(Number);
-        return dateFormatter.format(new Date(y, m - 1, d));
-    }
-
-    function toDateString(date: Date): string {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, "0");
-        const d = String(date.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
-    }
-
-    const availableYears = $derived.by(() => {
-        if (!earliestDate) return [new Date().getFullYear()];
-        const startYear = Number(earliestDate.slice(0, 4));
-        const currentYear = new Date().getFullYear();
-        const years: number[] = [];
-        for (let y = currentYear; y >= startYear; y--) years.push(y);
-        return years;
-    });
-
-    const weeks = $derived.by(() => {
-        if (heatmapDays.length === 0) return [];
-
-        const first = heatmapDays[0].date;
-        const last = heatmapDays[heatmapDays.length - 1].date;
-
-        const [fy, fm, fd] = first.split("-").map(Number);
-        const [ly, lm, ld] = last.split("-").map(Number);
-
-        const countByDate = new Map(heatmapDays.map((d) => [d.date, d.count]));
-
-        const start = new Date(fy, fm - 1, fd);
-        start.setDate(start.getDate() - start.getDay());
-
-        const end = new Date(ly, lm - 1, ld);
-
-        const days: { date: string; count: number }[] = [];
-        const cursor = new Date(start);
-
-        while (cursor <= end) {
-            const iso = toDateString(cursor);
-            days.push({ date: iso, count: countByDate.get(iso) ?? 0 });
-            cursor.setDate(cursor.getDate() + 1);
-        }
-
-        const result: { date: string; count: number }[][] = [];
-        for (let i = 0; i < days.length; i += 7) {
-            result.push(days.slice(i, i + 7));
-        }
-        return result;
-    });
-
-    function intensity(count: number): string {
-        if (count === 0) return "bg-[var(--color-violet-pale)]";
-        if (count < 3) return "bg-violet-300";
-        if (count < 6) return "bg-violet-500";
-        if (count < 10) return "bg-violet-700";
-        return "bg-violet-900";
-    }
-
-    function fillGaps(
-        startDate: string,
-        endDate: string,
-        results: HeatmapDay[],
-    ) {
-        const countByDate = new Map(results.map((d) => [d.date, d.count]));
-        const [sy, sm, sd] = startDate.split("-").map(Number);
-        const [ey, em, ed] = endDate.split("-").map(Number);
-        const cursor = new Date(sy, sm - 1, sd);
-        const end = new Date(ey, em - 1, ed);
-        const days: { date: string; count: number }[] = [];
-
-        while (cursor <= end) {
-            const iso = toDateString(cursor);
-            days.push({ date: iso, count: countByDate.get(iso) ?? 0 });
-            cursor.setDate(cursor.getDate() + 1);
-        }
-        return days;
-    }
-
-    function computeRange(): { startDate: string; endDate: string } {
-        const today = new Date();
-        const endDate = toDateString(today);
-
-        if (selectedRange === "month") {
-            return {
-                startDate: toDateString(
-                    new Date(today.getFullYear(), today.getMonth(), 1),
-                ),
-                endDate,
-            };
-        }
-        if (selectedRange === "year") {
-            return { startDate: `${selectedYear}-01-01`, endDate };
-        }
-        return { startDate: earliestDate ?? endDate, endDate };
-    }
-
-    async function loadHeatmap() {
-        heatmapLoading = true;
-        const { startDate, endDate } = computeRange();
-        const data = await apiFetch<HeatmapResponse>(
-            `/stats/heatmap?startDate=${startDate}&endDate=${endDate}&scope=${scope}`,
-        );
-        heatmapDays = fillGaps(startDate, endDate, data.results);
-        heatmapLoading = false;
-
-        queueMicrotask(() => {
-            if (scrollContainer) {
-                scrollContainer.scrollLeft = scrollContainer.scrollWidth;
-            }
-        });
-    }
-
-    async function loadLeaderboards() {
-        const [songsData, artistsData] = await Promise.all([
-            apiFetch<{ results: TopSong[] }>(
-                `/stats/top-songs?limit=100&scope=${scope}`,
-            ),
-            apiFetch<{ results: TopArtist[] }>(
-                `/stats/top-artists?limit=100&scope=${scope}`,
-            ),
-        ]);
-        topSongs = songsData.results;
-        topArtists = artistsData.results;
-    }
-
-    async function reload() {
-        await Promise.all([loadLeaderboards(), loadHeatmap()]);
-    }
-
-    function setScope(next: "me" | "global") {
-        if (scope === next) return;
-        scope = next;
-        reload();
-    }
-
-    function showTooltip(
-        e: MouseEvent | TouchEvent,
-        day: { date: string; count: number },
-    ) {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        tooltip = {
-            date: formatDateLong(day.date),
-            plays: `${day.count} play${day.count === 1 ? "" : "s"}`,
-            x: rect.left + rect.width / 2,
-            y: rect.top,
+    if (selectedRange === "month") {
+        return {
+            startDate: toDateString(new Date(today.getFullYear(), today.getMonth(), 1)),
+            endDate,
         };
     }
-
-    function hideTooltip() {
-        tooltip = null;
+    if (selectedRange === "year") {
+        return { startDate: `${selectedYear}-01-01`, endDate };
     }
+    return { startDate: earliestDate ?? endDate, endDate };
+}
 
-    onMount(async () => {
-        const earliestData = await apiFetch<{ date: string | null }>(
-            "/stats/earliest-play",
-        );
-        earliestDate = earliestData.date;
-        await reload();
-        loading = false;
+async function loadHeatmap() {
+    heatmapLoading = true;
+    const { startDate, endDate } = computeRange();
+    const data = await apiFetch<HeatmapResponse>(
+        `/stats/heatmap?startDate=${startDate}&endDate=${endDate}&scope=${scope}`,
+    );
+    heatmapDays = fillGaps(startDate, endDate, data.results);
+    heatmapLoading = false;
+
+    queueMicrotask(() => {
+        if (scrollContainer) {
+            scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+        }
     });
+}
+
+async function loadLeaderboards() {
+    const [songsData, artistsData] = await Promise.all([
+        apiFetch<{ results: TopSong[] }>(`/stats/top-songs?limit=100&scope=${scope}`),
+        apiFetch<{ results: TopArtist[] }>(`/stats/top-artists?limit=100&scope=${scope}`),
+    ]);
+    topSongs = songsData.results;
+    topArtists = artistsData.results;
+}
+
+async function reload() {
+    await Promise.all([loadLeaderboards(), loadHeatmap()]);
+}
+
+function setScope(next: "me" | "global") {
+    if (scope === next) return;
+    scope = next;
+    reload();
+}
+
+function showTooltip(e: MouseEvent | TouchEvent, day: { date: string; count: number }) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    tooltip = {
+        date: formatDateLong(day.date),
+        plays: `${day.count} play${day.count === 1 ? "" : "s"}`,
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+    };
+}
+
+function hideTooltip() {
+    tooltip = null;
+}
+
+onMount(async () => {
+    const earliestData = await apiFetch<{ date: string | null }>("/stats/earliest-play");
+    earliestDate = earliestData.date;
+    await reload();
+    loading = false;
+});
 </script>
 
 <div class="flex flex-col gap-6 md:gap-8">
     <div class="flex items-center justify-between">
-        <h1 class="text-xl text-[var(--color-text-primary)]">Statistics</h1>
+        <h1 class="text-xl text-(--color-text-primary)">
+            {m["statistics"]()}
+        </h1>
 
         <div
-            class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-0.5 text-sm"
+            class="flex rounded-lg border border-(--color-border) bg-(--color-surface) p-0.5 text-sm"
         >
             <button
                 onclick={() => setScope("me")}
                 class="rounded px-3 py-1 {scope === 'me'
-                    ? 'bg-[var(--color-accent)] text-white'
-                    : 'text-[var(--color-text-muted)]'}"
+                    ? 'bg-(--color-accent) text-white'
+                    : 'text-(--color-text-muted)'}"
             >
-                My stats
+                {m["my_stats"]()}
             </button>
             <button
                 onclick={() => setScope("global")}
                 class="rounded px-3 py-1 {scope === 'global'
-                    ? 'bg-[var(--color-accent)] text-white'
-                    : 'text-[var(--color-text-muted)]'}"
+                    ? 'bg-(--color-accent) text-white'
+                    : 'text-(--color-text-muted)'}"
             >
-                Everyone
+                {m["everyone"]()}
             </button>
         </div>
     </div>
 
     {#if loading}
         <div
-            class="flex h-40 items-center justify-center text-sm text-[var(--color-text-muted)]"
+            class="flex h-40 items-center justify-center text-sm text-(--color-text-muted)"
         >
-            Loading...
+            {m["loading"]()}
         </div>
     {:else}
         <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
-                <h2
-                    class="text-sm font-medium text-[var(--color-text-primary)]"
-                >
-                    Listening activity
+                <h2 class="text-sm font-medium text-(--color-text-primary)">
+                    {m["listening_activity"]()}
                 </h2>
 
                 <div class="flex items-center gap-2">
                     <select
                         bind:value={selectedRange}
                         onchange={loadHeatmap}
-                        class="rounded-lg border border-gray-300 bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
+                        class="rounded-lg border border-gray-300 bg-(--color-surface) px-2 py-1 text-sm text-(--color-text-primary)"
                     >
-                        <option value="month">This month</option>
-                        <option value="year">This year</option>
-                        <option value="all">All time</option>
+                        <option value="month"
+                            >{m["heatmap.this_month"]()}</option
+                        >
+                        <option value="year">{m["heatmap.this_year"]()}</option>
+                        <option value="all">{m["heatmap.all_time"]()}</option>
                     </select>
 
                     {#if selectedRange === "year"}
                         <select
                             bind:value={selectedYear}
                             onchange={loadHeatmap}
-                            class="rounded-lg border border-gray-300 bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
+                            class="rounded-lg border border-gray-300 bg-(--color-surface) px-2 py-1 text-sm text-(--color-text-primary)"
                         >
                             {#each availableYears as year}
                                 <option value={year}>{year}</option>
@@ -283,13 +271,13 @@
 
             <div
                 bind:this={scrollContainer}
-                class="scrollbar-hide overflow-x-auto rounded-xl bg-[var(--color-surface)] p-3 shadow-sm md:p-4 w-fit"
+                class="scrollbar-hide overflow-x-auto rounded-xl bg-(--color-surface) p-3 shadow-sm md:p-4 w-fit"
             >
                 {#if heatmapLoading}
                     <div
-                        class="flex h-24 items-center justify-center text-sm text-[var(--color-text-muted)]"
+                        class="flex h-24 items-center justify-center text-sm text-(--color-text-muted)"
                     >
-                        Loading...
+                        {m["loading"]()}
                     </div>
                 {:else}
                     <div class="flex w-fit gap-1">
@@ -317,72 +305,68 @@
 
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div class="flex flex-col gap-2">
-                <h2
-                    class="text-sm font-medium text-[var(--color-text-primary)]"
-                >
-                    Top songs
+                <h2 class="text-sm font-medium text-(--color-text-primary)">
+                    {m["top_songs"]()}
                 </h2>
                 <div
-                    class="flex flex-col gap-0.5 rounded-xl bg-[var(--color-surface)] p-2 shadow-sm"
+                    class="flex flex-col gap-0.5 rounded-xl bg-(--color-surface) p-2 shadow-sm"
                 >
                     {#each topSongs as song, i}
                         <div
                             class="flex items-center gap-3 rounded-lg px-2 py-2"
                         >
                             <span
-                                class="w-6 shrink-0 text-sm text-[var(--color-text-muted)]"
+                                class="w-6 shrink-0 text-sm text-(--color-text-muted)"
                                 >{i + 1}</span
                             >
                             <span
-                                class="flex-1 truncate text-sm text-[var(--color-text-primary)]"
+                                class="flex-1 truncate text-sm text-(--color-text-primary)"
                                 >{song.title}</span
                             >
                             <span
-                                class="shrink-0 text-sm text-[var(--color-text-muted)]"
+                                class="shrink-0 text-sm text-(--color-text-muted)"
                                 >{song.playCount}</span
                             >
                         </div>
                     {:else}
                         <div
-                            class="px-2 py-4 text-center text-sm text-[var(--color-text-muted)]"
+                            class="px-2 py-4 text-center text-sm text-(--color-text-muted)"
                         >
-                            No plays yet
+                            {m["no_plays_yet"]()}
                         </div>
                     {/each}
                 </div>
             </div>
 
             <div class="flex flex-col gap-2">
-                <h2
-                    class="text-sm font-medium text-[var(--color-text-primary)]"
-                >
-                    Top artists
+                <h2 class="text-sm font-medium text-(--color-text-primary)">
+                    {m["top_artists"]()}
                 </h2>
                 <div
-                    class="flex flex-col gap-0.5 rounded-xl bg-[var(--color-surface)] p-2 shadow-sm"
+                    class="flex flex-col gap-0.5 rounded-xl bg-(--color-surface) p-2 shadow-sm"
                 >
                     {#each topArtists as artist, i}
                         <div
                             class="flex items-center gap-3 rounded-lg px-2 py-2"
                         >
                             <span
-                                class="w-6 shrink-0 text-sm text-[var(--color-text-muted)]"
+                                class="w-6 shrink-0 text-sm text-(--color-text-muted)"
                                 >{i + 1}</span
                             >
                             <span
-                                class="flex-1 truncate text-sm text-[var(--color-text-primary)]"
+                                class="flex-1 truncate text-sm text-(--color-text-primary)"
                                 >{artist.name}</span
                             >
                             <span
-                                class="shrink-0 text-sm text-[var(--color-text-muted)]"
+                                class="shrink-0 text-sm text-(--color-text-muted)"
                                 >{artist.playCount}</span
                             >
                         </div>
                     {:else}
                         <div
-                            class="px-2 py-4 text-center text-sm text-[var(--color-text-muted)]"
+                            class="px-2 py-4 text-center text-sm text-(--color-text-muted)"
                         >
-                            No plays yet
+                            {m["no_plays_yet"]()}
                         </div>
                     {/each}
                 </div>
@@ -393,11 +377,11 @@
 
 {#if tooltip}
     <div
-        class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-[var(--color-surface)] px-3 py-1.5 whitespace-nowrap shadow-xs"
+        class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-(--color-surface) px-3 py-1.5 whitespace-nowrap shadow-xs"
         style="left: {tooltip.x}px; top: {tooltip.y - 8}px;"
     >
-        <p class="text-xs text-[var(--color-text-muted)]">{tooltip.date}</p>
-        <p class="text-[var(--color-text-primary)]">{tooltip.plays}</p>
+        <p class="text-xs text-(--color-text-muted)">{tooltip.date}</p>
+        <p class="text-(--color-text-primary)">{tooltip.plays}</p>
     </div>
 {/if}
 

@@ -250,7 +250,7 @@ export async function adminDeleteUser(
 }
 
 export function getMinPasswordLength(): number {
-    const raw = process.env.PASSWORD_MIN_LENGTH;
+    const raw = parseInt(process.env.PASSWORD_MIN_LENGTH || "8", 10);
     if (!raw) return 0;
     const n = Number(raw);
     if (Number.isNaN(n) || n < 0) return 0;

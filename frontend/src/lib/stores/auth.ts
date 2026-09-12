@@ -1,4 +1,5 @@
 import { get, writable } from "svelte/store";
+import { m } from "$lib/paraglide/messages";
 
 interface AuthState {
     accessToken: string | null;
@@ -79,7 +80,7 @@ function createAuthStore() {
 
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
-                throw new Error(body.error ?? "invalid credentials");
+                throw new Error(body.error ?? m["invalid_credentials"]());
             }
 
             const data = await response.json();
@@ -103,7 +104,7 @@ function createAuthStore() {
 
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
-                throw new Error(body.error ?? "failed to reset password");
+                throw new Error(body.error ?? m["reset_password_failed"]());
             }
 
             const data = await response.json();

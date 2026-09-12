@@ -168,7 +168,7 @@ function formatAudioInfo(): string | null {
     <div class="relative z-10 flex items-center justify-between p-4">
         <button
             onclick={() => setExpanded(false)}
-            class="text-3xl text-[var(--color-text-muted)] active:scale-90"
+            class="text-3xl text-(--color-text-muted) active:scale-90"
         >
             <i class="bx bx-chevron-down"></i>
         </button>
@@ -182,11 +182,14 @@ function formatAudioInfo(): string | null {
         <img
             src={track.thumbnailUrl ?? "/placeholder.png"}
             alt=""
-            style="view-transition-name: album-art; transform: translateX({imgOffsetX}px); transition: {dragging
-                ? 'none'
-                : 'transform 0.18s ease'}; {ambientColor
-                ? `box-shadow: 0 0 60px 5px ${ambientColor};`
-                : ''}"
+            style="
+                view-transition-name: album-art;
+                transform: translateX({imgOffsetX}px);
+                transition: {dragging ? 'none' : 'transform 0.18s ease'};
+                {ambientColor
+                ? `filter: drop-shadow(0 0 20px ${ambientColor});`
+                : ''}
+            "
             class="aspect-square w-full max-w-xs rounded-2xl object-cover"
         />
 
@@ -204,7 +207,7 @@ function formatAudioInfo(): string | null {
                             {track.title}
                         </span>
                         <span
-                            class="inline-block pr-20 text-2xl font-bold tracking-tight text-[var(--color-text-primary)]"
+                            class="inline-block pr-20 text-2xl font-bold tracking-tight text-(--color-text-primary)"
                             aria-hidden="true"
                         >
                             {track.title}
@@ -213,7 +216,7 @@ function formatAudioInfo(): string | null {
                 {:else}
                     <span
                         bind:this={titleEl}
-                        class="inline-block text-2xl font-bold tracking-tight text-[var(--color-text-primary)]"
+                        class="inline-block text-2xl font-bold tracking-tight text-(--color-text-primary)"
                     >
                         {track.title}
                     </span>
@@ -250,17 +253,15 @@ function formatAudioInfo(): string | null {
                 value={currentTime}
                 onchange={(e) =>
                     (audioEl.currentTime = Number(e.currentTarget.value))}
-                class="w-full accent-[var(--color-accent)]"
+                class="w-full accent-(--color-accent)"
             />
-            <div
-                class="flex justify-between text-sm text-[var(--color-text-muted)]"
-            >
+            <div class="flex justify-between text-sm text-(--color-text-muted)">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(track.durationSeconds)}</span>
             </div>
             {#if formatAudioInfo()}
                 <div
-                    class="text-center text-xs text-[var(--color-text-muted)] opacity-70"
+                    class="text-center text-xs text-(--color-text-muted) opacity-70"
                 >
                     {formatAudioInfo()}
                 </div>
@@ -272,8 +273,8 @@ function formatAudioInfo(): string | null {
                 onclick={cycleMode}
                 class="flex h-12 w-12 items-center justify-center text-2xl active:scale-90 {$playerStore.mode ===
                 'normal'
-                    ? 'text-[var(--color-text-muted)]'
-                    : 'text-[var(--color-accent)]'}"
+                    ? 'text-(--color-text-muted)'
+                    : 'text-(--color-accent)'}"
                 title={modeLabel[$playerStore.mode]}
             >
                 <i class="bx {modeIcon[$playerStore.mode]}"></i>
@@ -288,7 +289,7 @@ function formatAudioInfo(): string | null {
 
             <button
                 onclick={togglePlayback}
-                class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-3xl text-white active:scale-90"
+                class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-(--color-accent) text-3xl text-white active:scale-90"
             >
                 <i class="bx {isPlaying ? 'bx-pause' : 'bx-play'}"></i>
             </button>
@@ -302,7 +303,7 @@ function formatAudioInfo(): string | null {
 
             <button
                 onclick={openQueueFromOverlay}
-                class="flex h-12 w-12 items-center justify-center text-2xl text-[var(--color-text-muted)] active:scale-90"
+                class="flex h-12 w-12 items-center justify-center text-2xl text-(--color-text-muted) active:scale-90"
             >
                 <i class="bx bx-list-ul"></i>
             </button>

@@ -1,6 +1,8 @@
 <script lang="ts">
+import { m } from "$lib/paraglide/messages";
 import { playerStore } from "$lib/stores/player";
 import type { Music } from "$lib/types";
+import { translateDynKey } from "$lib/utils/translateDynKey";
 
 interface Props {
     track: Music;
@@ -63,13 +65,6 @@ const modeIcon: Record<(typeof modeOrder)[number], string> = {
     "loop-song": "bx-rotate-right",
     "loop-playlist": "bx-repeat",
     randomize: "bx-shuffle",
-};
-
-const modeLabel: Record<(typeof modeOrder)[number], string> = {
-    normal: "Play through",
-    "loop-song": "Loop this song",
-    "loop-playlist": "Loop playlist",
-    randomize: "Shuffle",
 };
 
 function cycleMode() {
@@ -217,9 +212,9 @@ function onTouchEnd() {
                 cycleMode();
             }}
             class="hidden text-lg md:block {$playerStore.mode === 'normal'
-                ? 'text-[var(--color-text-muted)] hover:text-neutral-600'
-                : 'text-[var(--color-accent)]'}"
-            title={modeLabel[$playerStore.mode]}
+                ? 'text-(--color-text-muted) hover:text-neutral-600'
+                : 'text-(--color-accent)'}"
+            title={translateDynKey(`order_modes.${$playerStore.mode}`)}
         >
             <i class="bx {modeIcon[$playerStore.mode]}"></i>
         </button>
@@ -229,7 +224,7 @@ function onTouchEnd() {
                 stop(e);
                 playerStore.previous();
             }}
-            class="text-3xl hidden md:block text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-90"
+            class="text-3xl hidden md:block text-(--color-text-muted) hover:text-(--color-accent) active:scale-90"
         >
             <i class="bx bx-skip-previous"></i>
         </button>
@@ -239,7 +234,7 @@ function onTouchEnd() {
                 stop(e);
                 togglePlayback();
             }}
-            class="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-accent)] text-3xl text-white hover:bg-[var(--color-accent-hover)] active:scale-90"
+            class="flex h-14 w-14 items-center justify-center rounded-full bg-(--color-accent) text-3xl text-white hover:bg-(--color-accent-hover) active:scale-90"
         >
             <i class="bx {isPlaying ? 'bx-pause' : 'bx-play'}"></i>
         </button>
@@ -249,7 +244,7 @@ function onTouchEnd() {
                 stop(e);
                 playerStore.skipNext();
             }}
-            class="text-3xl hidden md:block text-[var(--color-text-muted)] hover:text-[var(--color-accent)] active:scale-90"
+            class="text-3xl hidden md:block text-(--color-text-muted) hover:text-(--color-accent) active:scale-90"
         >
             <i class="bx bx-skip-next"></i>
         </button>

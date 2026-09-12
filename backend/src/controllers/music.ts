@@ -10,37 +10,22 @@ const ALLOWED_SORT_FIELDS = new Set(["title", "createdAt", "durationSeconds"]);
 const router = Router();
 
 router.get("/", async (req, res) => {
-    const page = req.query.page ? Number(req.query.page) : 1;
-    const limit = req.query.limit ? Number(req.query.limit) : 50;
     const sortField =
         typeof req.query.sort === "string" && ALLOWED_SORT_FIELDS.has(req.query.sort)
             ? req.query.sort
-            : "title";
-    const sortOrder = req.query.order === "desc" ? "DESC" : "ASC";
+            : "createdAt";
 
-    if (page < 1 || limit < 1 || limit > 200) {
-        return res.status(400).json({ error: "invalid page or limit" });
-    }
+    const sortOrder = req.query.order === "asc" ? "ASC" : "DESC";
 
-    const skip = (page - 1) * limit;
-
-    const [rows, total] = await musicRepository
+    const rows = await musicRepository
         .createQueryBuilder("music")
         .leftJoinAndSelect("music.artist", "artist")
         .orderBy(`music.${sortField}`, sortOrder)
-        .skip(skip)
-        .take(limit)
-        .getManyAndCount();
+        .getMany();
 
     const results = await Promise.all(rows.map(withThumbnailUrl));
 
-    res.json({
-        results,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-    });
+    return res.json(results);
 });
 
 router.get("/shuffle", async (_req, res) => {

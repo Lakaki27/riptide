@@ -1,42 +1,42 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { goto } from "$app/navigation";
-    import { page } from "$app/state";
-    import { apiFetch } from "$lib/api";
-    import MusicList from "$lib/components/MusicList.svelte";
-    import { m } from "$lib/paraglide/messages";
-    import { playerStore } from "$lib/stores/player";
-    import type { Music } from "$lib/types";
+import { onMount } from "svelte";
+import { goto } from "$app/navigation";
+import { page } from "$app/state";
+import { apiFetch } from "$lib/api";
+import MusicList from "$lib/components/MusicList.svelte";
+import { m } from "$lib/paraglide/messages";
+import { playerStore } from "$lib/stores/player";
+import type { Music } from "$lib/types";
 
-    const artistId = page.params.id;
+const artistId = page.params.id;
 
-    interface ArtistDetail {
-        id: string;
-        name: string;
-        createdAt: string;
-        musics: Music[];
-        total: number;
+interface ArtistDetail {
+    id: string;
+    name: string;
+    createdAt: string;
+    musics: Music[];
+    total: number;
+}
+
+let artist = $state<ArtistDetail | null>(null);
+
+async function loadArtist() {
+    artist = await apiFetch<ArtistDetail>(`/artists/${artistId}`);
+}
+
+function playAll() {
+    if (artist) playerStore.setQueue(artist.musics, 0);
+}
+
+function goBack() {
+    if (window.history.length > 1) {
+        history.back();
+    } else {
+        goto("/");
     }
+}
 
-    let artist = $state<ArtistDetail | null>(null);
-
-    async function loadArtist() {
-        artist = await apiFetch<ArtistDetail>(`/artists/${artistId}`);
-    }
-
-    function playAll() {
-        if (artist) playerStore.setQueue(artist.musics, 0);
-    }
-
-    function goBack() {
-        if (window.history.length > 1) {
-            history.back();
-        } else {
-            goto("/");
-        }
-    }
-
-    onMount(loadArtist);
+onMount(loadArtist);
 </script>
 
 {#if artist}
@@ -45,22 +45,22 @@
             <div class="flex items-center gap-2">
                 <button
                     onclick={goBack}
-                    class="flex h-9 w-9 items-center justify-center rounded-full text-xl text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-violet-pale)] hover:text-[var(--color-accent)] active:scale-90"
+                    class="flex h-9 w-9 items-center justify-center rounded-full text-xl text-(--color-text-muted) transition-colors hover:bg-(--color-violet-pale) hover:text-(--color-accent) active:scale-90"
                 >
                     <i class="bx bx-arrow-back"></i>
                 </button>
-                <h1 class="text-xl text-[var(--color-text-primary)]">
+                <h1 class="text-xl text-(--color-text-primary)">
                     {artist.name}
                 </h1>
             </div>
             <button
                 onclick={playAll}
-                class="rounded-xl bg-[var(--color-accent)] px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-[var(--color-accent-hover)] active:scale-95"
+                class="rounded-xl bg-(--color-accent) px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-(--color-accent-hover) active:scale-95"
             >
                 {m["play_all"]()}
             </button>
         </div>
 
-        <MusicList musics={artist.musics} />
+        <MusicList musics={artist.musics} queueMusics={artist.musics} />
     </div>
 {/if}

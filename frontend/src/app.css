@@ -33,7 +33,6 @@ a,
 }
 
 * {
-    transition-property:
-        color, background-color, border-color, box-shadow, transform;
+    transition-property: color, background-color, border-color, box-shadow, transform;
     transition-duration: var(--transition-fast);
 }

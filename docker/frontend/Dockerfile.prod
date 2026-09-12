@@ -1,14 +1,18 @@
-FROM node:26 AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:26-slim
+FROM node:26-alpine
 WORKDIR /app
 COPY --from=build /app/build ./build
 COPY --from=build /app/package*.json ./
-RUN npm install --omit=dev
-EXPOSE 3000
+RUN npm ci --omit=dev
+
+ENV PORT=5173
+ENV HOST=0.0.0.0
+
+EXPOSE 5173
 CMD ["node", "build/index.js"]

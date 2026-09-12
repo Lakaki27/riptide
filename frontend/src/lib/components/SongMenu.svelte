@@ -1,124 +1,115 @@
 <script lang="ts">
-    import { apiFetch } from "$lib/api";
-    import { authStore } from "$lib/stores/auth";
-    import { playerStore } from "$lib/stores/player";
-    import { playlistsStore } from "$lib/stores/playlists";
-    import { toastStore } from "$lib/stores/toast";
-    import type { Music } from "$lib/types";
+import { apiFetch } from "$lib/api";
+import { m } from "$lib/paraglide/messages";
+import { authStore } from "$lib/stores/auth";
+import { playerStore } from "$lib/stores/player";
+import { playlistsStore } from "$lib/stores/playlists";
+import { toastStore } from "$lib/stores/toast";
+import type { Music } from "$lib/types";
 
-    interface Props {
-        music: Music;
-        playlistId?: string;
-        onRemoved?: () => void;
+interface Props {
+    music: Music;
+    playlistId?: string;
+    onRemoved?: () => void;
+}
+
+let { music, playlistId, onRemoved }: Props = $props();
+
+let open = $state(false);
+let showPlaylistSubmenu = $state(false);
+let menuPosition = $state<{ top: number; left: number } | null>(null);
+let submenuPosition = $state<{ top: number; left: number } | null>(null);
+let triggerEl: HTMLElement;
+let playlistRowEl: HTMLElement;
+let submenuEl: HTMLElement;
+
+const MENU_WIDTH = 192;
+const SUBMENU_WIDTH = 208;
+
+function toggleOpen(e: Event) {
+    e.stopPropagation();
+    if (!open) {
+        const rect = triggerEl.getBoundingClientRect();
+
+        const leftAligned = rect.right - MENU_WIDTH;
+        const left = leftAligned >= 8 ? leftAligned : rect.left;
+        const clampedLeft = Math.min(left, window.innerWidth - MENU_WIDTH - 8);
+
+        menuPosition = {
+            top: rect.bottom + 4,
+            left: Math.max(8, clampedLeft),
+        };
+    }
+    open = !open;
+    showPlaylistSubmenu = false;
+    if (open) playlistsStore.ensureLoaded();
+}
+
+function close() {
+    open = false;
+    showPlaylistSubmenu = false;
+}
+
+function handleAddToQueue() {
+    playerStore.addToQueue(music);
+    toastStore.show("Added to queue");
+    close();
+}
+
+function handlePlayNext() {
+    playerStore.playNext(music);
+    toastStore.show("Playing next");
+    close();
+}
+
+function togglePlaylistSubmenu(e: Event) {
+    e.stopPropagation();
+
+    if (!showPlaylistSubmenu) {
+        const rect = playlistRowEl.getBoundingClientRect();
+        const spaceRight = window.innerWidth - rect.right;
+        const openRight = spaceRight >= SUBMENU_WIDTH;
+
+        const left = openRight ? rect.right + 4 : rect.left - SUBMENU_WIDTH - 4;
+
+        const estimatedHeight = 220;
+        const spaceBelow = window.innerHeight - rect.top;
+        const top =
+            spaceBelow >= estimatedHeight
+                ? rect.top
+                : Math.max(8, window.innerHeight - estimatedHeight - 8);
+
+        submenuPosition = { top, left: Math.max(8, left) };
     }
 
-    let { music, playlistId, onRemoved }: Props = $props();
+    showPlaylistSubmenu = !showPlaylistSubmenu;
+}
 
-    let open = $state(false);
-    let showPlaylistSubmenu = $state(false);
-    let menuPosition = $state<{ top: number; left: number } | null>(null);
-    let submenuPosition = $state<{ top: number; left: number } | null>(null);
-    let triggerEl: HTMLElement;
-    let playlistRowEl: HTMLElement;
-    let submenuEl: HTMLElement;
-
-    const MENU_WIDTH = 192;
-    const SUBMENU_WIDTH = 208;
-
-    function toggleOpen(e: Event) {
-        e.stopPropagation();
-        if (!open) {
-            const rect = triggerEl.getBoundingClientRect();
-
-            const leftAligned = rect.right - MENU_WIDTH;
-            const left = leftAligned >= 8 ? leftAligned : rect.left;
-            const clampedLeft = Math.min(
-                left,
-                window.innerWidth - MENU_WIDTH - 8,
-            );
-
-            menuPosition = {
-                top: rect.bottom + 4,
-                left: Math.max(8, clampedLeft),
-            };
-        }
-        open = !open;
-        showPlaylistSubmenu = false;
-        if (open) playlistsStore.ensureLoaded();
-    }
-
-    function close() {
-        open = false;
-        showPlaylistSubmenu = false;
-    }
-
-    function handleAddToQueue() {
-        playerStore.addToQueue(music);
-        toastStore.show("Added to queue");
-        close();
-    }
-
-    function handlePlayNext() {
-        playerStore.playNext(music);
-        toastStore.show("Playing next");
-        close();
-    }
-
-    function togglePlaylistSubmenu(e: Event) {
-        e.stopPropagation();
-
-        if (!showPlaylistSubmenu) {
-            const rect = playlistRowEl.getBoundingClientRect();
-            const spaceRight = window.innerWidth - rect.right;
-            const openRight = spaceRight >= SUBMENU_WIDTH;
-
-            const left = openRight
-                ? rect.right + 4
-                : rect.left - SUBMENU_WIDTH - 4;
-
-            const estimatedHeight = 220;
-            const spaceBelow = window.innerHeight - rect.top;
-            const top =
-                spaceBelow >= estimatedHeight
-                    ? rect.top
-                    : Math.max(8, window.innerHeight - estimatedHeight - 8);
-
-            submenuPosition = { top, left: Math.max(8, left) };
-        }
-
-        showPlaylistSubmenu = !showPlaylistSubmenu;
-    }
-
-    async function handleAddToPlaylist(
-        targetPlaylistId: string,
-        playlistName: string,
-    ) {
-        try {
-            await apiFetch(`/playlists/${targetPlaylistId}`, {
-                method: "POST",
-                body: JSON.stringify({ songId: music.id }),
-            });
-            toastStore.show(`Added to ${playlistName}`);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : "";
-            toastStore.show(
-                message.includes("already")
-                    ? `Already in ${playlistName}`
-                    : "Could not add song",
-            );
-        }
-        close();
-    }
-
-    async function handleRemove() {
-        if (!playlistId) return;
-        await apiFetch(`/playlists/${playlistId}/musics/${music.id}`, {
-            method: "DELETE",
+async function handleAddToPlaylist(targetPlaylistId: string, playlistName: string) {
+    try {
+        await apiFetch(`/playlists/${targetPlaylistId}`, {
+            method: "POST",
+            body: JSON.stringify({ songId: music.id }),
         });
-        toastStore.show("Removed from playlist");
-        close();
-        onRemoved?.();
+        toastStore.show(`Added to ${playlistName}`);
+    } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        toastStore.show(
+            message.includes("already") ? `Already in ${playlistName}` : "Could not add song",
+        );
     }
+    close();
+}
+
+async function handleRemove() {
+    if (!playlistId) return;
+    await apiFetch(`/playlists/${playlistId}/musics/${music.id}`, {
+        method: "DELETE",
+    });
+    toastStore.show("Removed from playlist");
+    close();
+    onRemoved?.();
+}
 </script>
 
 <svelte:window onclick={() => open && close()} />
@@ -127,7 +118,7 @@
     <button
         bind:this={triggerEl}
         onclick={toggleOpen}
-        class="rounded px-2 py-1 text-[var(--color-text-muted)] hover:bg-[var(--color-violet-pale)]"
+        class="rounded px-2 py-1 text-(--color-text-muted) hover:bg-(--color-violet-pale)"
     >
         <i class="bx bx-dots-vertical-rounded"></i>
     </button>
@@ -136,19 +127,19 @@
         <div
             onclick={(e) => e.stopPropagation()}
             style="position: fixed; top: {menuPosition.top}px; left: {menuPosition.left}px; width: {MENU_WIDTH}px;"
-            class="z-50 flex flex-col gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-md"
+            class="z-50 flex flex-col gap-1 rounded-lg border border-(--color-border) bg-(--color-surface) p-2 shadow-md"
         >
             <button
                 onclick={handleAddToQueue}
-                class="rounded px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-violet-pale)] active:scale-95"
+                class="rounded px-2 py-1.5 text-left text-sm text-(--color-text-primary) hover:bg-(--color-violet-pale) active:scale-95"
             >
-                Add to queue
+                {m["song_menu.add_to_queue"]()}
             </button>
             <button
                 onclick={handlePlayNext}
-                class="rounded px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-violet-pale)] active:scale-95"
+                class="rounded px-2 py-1.5 text-left text-sm text-(--color-text-primary) hover:bg-(--color-violet-pale) active:scale-95"
             >
-                Play next
+                {m["song_menu.play_next"]()}
             </button>
 
             {#if $authStore.role === "admin"}
@@ -156,10 +147,10 @@
                     bind:this={playlistRowEl}
                     onclick={togglePlaylistSubmenu}
                     class="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm active:scale-95 {showPlaylistSubmenu
-                        ? 'bg-[var(--color-violet-pale)] text-[var(--color-accent)]'
-                        : 'text-[var(--color-text-primary)] hover:bg-[var(--color-violet-pale)]'}"
+                        ? 'bg-(--color-violet-pale) text-(--color-accent)'
+                        : 'text-(--color-text-primary) hover:bg-(--color-violet-pale)'}"
                 >
-                    Add to playlist
+                    {m["song_menu.add_to_playlist"]()}
                     <i class="bx bx-chevron-right"></i>
                 </button>
             {/if}
@@ -169,7 +160,7 @@
                     onclick={handleRemove}
                     class="rounded px-2 py-1.5 text-left text-sm text-red-500 hover:bg-red-50 active:scale-95"
                 >
-                    Remove from playlist
+                    {m["song_menu.remove_from_playlist"]()}
                 </button>
             {/if}
         </div>
@@ -180,19 +171,19 @@
             bind:this={submenuEl}
             onclick={(e) => e.stopPropagation()}
             style="position: fixed; top: {submenuPosition.top}px; left: {submenuPosition.left}px; width: {SUBMENU_WIDTH}px;"
-            class="z-50 flex max-h-56 flex-col gap-1 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-lg"
+            class="z-50 flex max-h-56 flex-col gap-1 overflow-y-auto rounded-lg border border-(--color-border) bg-(--color-surface) p-2 shadow-lg"
         >
             {#each $playlistsStore as playlist}
                 <button
                     onclick={() =>
                         handleAddToPlaylist(playlist.id, playlist.name)}
-                    class="truncate rounded px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-violet-pale)] active:scale-95"
+                    class="truncate rounded px-2 py-1.5 text-left text-sm text-(--color-text-primary) hover:bg-(--color-violet-pale) active:scale-95"
                 >
                     {playlist.name}
                 </button>
             {:else}
-                <span class="px-2 py-1.5 text-sm text-[var(--color-text-muted)]"
-                    >No playlists</span
+                <span class="px-2 py-1.5 text-sm text-(--color-text-muted)"
+                    >{m["song_menu.no_playlists"]()}</span
                 >
             {/each}
         </div>

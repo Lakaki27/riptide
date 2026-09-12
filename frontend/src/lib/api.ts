@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 import { goto } from "$app/navigation";
+import { m } from "./paraglide/messages";
 import { authStore } from "./stores/auth";
 
 interface ApiOptions extends RequestInit {
@@ -39,13 +40,15 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
         } else {
             authStore.clear();
             goto("/auth");
-            throw new Error("session expired");
+            throw new Error(m["session_expired"]());
         }
     }
 
     if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({ error: "unknown error" }));
-        throw new Error(errorBody.error ?? `request failed with status ${response.status}`);
+        const errorBody = await response.json().catch(() => ({ error: m["unknown_error"]() }));
+        throw new Error(
+            errorBody.error ?? m["request_failed_with_status"]({ status: response.status }),
+        );
     }
 
     if (response.status === 204) return undefined as T;

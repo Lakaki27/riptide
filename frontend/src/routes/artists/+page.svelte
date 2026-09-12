@@ -1,66 +1,64 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { apiFetch } from "$lib/api";
-    import { m } from "$lib/paraglide/messages";
-    import type { Artist, PaginatedResponse } from "$lib/types";
+import { onMount } from "svelte";
+import { apiFetch } from "$lib/api";
+import { m } from "$lib/paraglide/messages";
+import type { Artist, PaginatedResponse } from "$lib/types";
 
-    let artists = $state<Artist[]>([]);
-    let query = $state("");
-    let page = $state(1);
-    let totalPages = $state(1);
-    let loading = $state(false);
+let artists = $state<Artist[]>([]);
+let query = $state("");
+let page = $state(1);
+let totalPages = $state(1);
+let loading = $state(false);
 
-    async function loadPage(reset = false) {
-        if (loading) return;
-        if (reset) {
-            artists = [];
-            page = 1;
-            totalPages = 1;
-        }
-        if (page > totalPages) return;
-
-        loading = true;
-        const data = await apiFetch<PaginatedResponse<Artist>>(
-            `/artists?page=${page}&limit=50`,
-        );
-        artists = [...artists, ...data.results];
-        totalPages = data.totalPages;
-        page += 1;
-        loading = false;
-    }
-
-    async function search() {
-        if (!query.trim()) {
-            await loadPage(true);
-            return;
-        }
-        const data = await apiFetch<PaginatedResponse<Artist>>(
-            `/search?type=artist&q=${encodeURIComponent(query)}`,
-        );
-        artists = data.results;
+async function loadPage(reset = false) {
+    if (loading) return;
+    if (reset) {
+        artists = [];
+        page = 1;
         totalPages = 1;
-        page = 2;
     }
+    if (page > totalPages) return;
 
-    function onScroll(e: Event) {
-        if (query.trim()) return;
-        const el = e.target as HTMLElement;
-        if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
-            loadPage();
-        }
+    loading = true;
+    const data = await apiFetch<PaginatedResponse<Artist>>(`/artists?page=${page}&limit=50`);
+    artists = [...artists, ...data.results];
+    totalPages = data.totalPages;
+    page += 1;
+    loading = false;
+}
+
+async function search() {
+    if (!query.trim()) {
+        await loadPage(true);
+        return;
     }
+    const data = await apiFetch<PaginatedResponse<Artist>>(
+        `/search?type=artist&q=${encodeURIComponent(query)}`,
+    );
+    artists = data.results;
+    totalPages = 1;
+    page = 2;
+}
 
-    onMount(() => loadPage());
+function onScroll(e: Event) {
+    if (query.trim()) return;
+    const el = e.target as HTMLElement;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+        loadPage();
+    }
+}
+
+onMount(() => loadPage());
 </script>
 
 <div class="flex h-full flex-col gap-4">
-    <h1 class="text-xl text-[var(--color-text-primary)]">Artists</h1>
+    <h1 class="text-xl text-(--color-text-primary)">{m["nav.artists"]()}</h1>
 
     <input
         bind:value={query}
         oninput={search}
         placeholder={m["search_artists"]()}
-        class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-gray-400"
+        class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
     />
 
     <div class="flex-1 overflow-y-auto" onscroll={onScroll}>
@@ -70,15 +68,15 @@
             {#each artists as artist}
                 <a
                     href="/artists/{artist.id}"
-                    class="flex flex-col items-center gap-2 rounded-xl bg-[var(--color-surface)] p-3 shadow-sm transition-all hover:bg-[var(--color-violet-pale)] hover:shadow-md active:scale-95 md:p-4"
+                    class="flex flex-col items-center gap-2 rounded-xl bg-(--color-surface) p-3 shadow-sm transition-all hover:bg-(--color-violet-pale) hover:shadow-md active:scale-95 md:p-4"
                 >
                     <div
-                        class="flex aspect-square w-full items-center justify-center rounded-full bg-[var(--color-violet-pale)] text-2xl text-[var(--color-accent)] md:text-3xl"
+                        class="flex aspect-square w-full items-center justify-center rounded-full bg-(--color-violet-pale) text-2xl text-(--color-accent) md:text-3xl"
                     >
                         {artist.name.slice(0, 1).toUpperCase()}
                     </div>
                     <span
-                        class="w-full truncate text-center text-sm text-[var(--color-text-primary)]"
+                        class="w-full truncate text-center text-sm text-(--color-text-primary)"
                         >{artist.name}</span
                     >
                 </a>
