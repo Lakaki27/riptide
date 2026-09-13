@@ -1,40 +1,40 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import SongMenu from "$lib/components/SongMenu.svelte";
-import type { Music } from "$lib/types";
+    import { goto } from "$app/navigation";
+    import SongMenu from "$lib/components/SongMenu.svelte";
+    import type { Music } from "$lib/types";
 
-interface Props {
-    music: Music;
-    onPlay: () => void;
-    playlistId?: string;
-    onRemoved?: () => void;
-    active?: boolean;
-    compact?: boolean;
-    showMenu?: boolean;
-    onTitleNavigate?: (music: Music) => void;
-}
-
-let {
-    music,
-    onPlay,
-    playlistId,
-    onRemoved,
-    active = false,
-    compact = false,
-    showMenu = true,
-    onTitleNavigate,
-}: Props = $props();
-
-function stop(e: Event) {
-    e.stopPropagation();
-}
-
-function handleTitleClick(e: Event) {
-    if (onTitleNavigate) {
-        stop(e);
-        onTitleNavigate(music);
+    interface Props {
+        music: Music;
+        onPlay: () => void;
+        playlistId?: string;
+        onRemoved?: () => void;
+        active?: boolean;
+        compact?: boolean;
+        showMenu?: boolean;
+        onTitleNavigate?: (music: Music) => void;
     }
-}
+
+    let {
+        music,
+        onPlay,
+        playlistId,
+        onRemoved,
+        active = false,
+        compact = false,
+        showMenu = true,
+        onTitleNavigate,
+    }: Props = $props();
+
+    function stop(e: Event) {
+        e.stopPropagation();
+    }
+
+    function handleTitleClick(e: Event) {
+        if (onTitleNavigate) {
+            stop(e);
+            onTitleNavigate(music);
+        }
+    }
 </script>
 
 <div
@@ -50,6 +50,8 @@ function handleTitleClick(e: Event) {
     <img
         src={music.thumbnailUrl ?? "/placeholder.png"}
         alt=""
+        loading="lazy"
+        decoding="async"
         class="{compact
             ? 'h-8 w-8'
             : 'h-10 w-10'} shrink-0 rounded-lg object-cover"

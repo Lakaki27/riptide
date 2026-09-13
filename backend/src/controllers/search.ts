@@ -13,7 +13,9 @@ router.get("/", async (req, res) => {
     const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
 
     if (type !== "music" && type !== "artist") {
-        return res.status(400).json({ error: "type must be 'music' or 'artist'" });
+        return res
+            .status(400)
+            .json({ error: "type must be 'music' or 'artist'" });
     }
 
     if (!q) {
@@ -21,31 +23,25 @@ router.get("/", async (req, res) => {
     }
 
     if (type === "artist") {
-        const [results, total] = await artistRepository
+        const results = await artistRepository
             .createQueryBuilder("artist")
             .where("artist.name ILIKE :q", { q: `%${q}%` })
             .orderBy("artist.name", "ASC")
-            .getManyAndCount();
+            .getMany();
 
-        return res.json({
-            results,
-            total,
-        });
+        return res.json(results);
     }
 
-    const [rows, total] = await musicRepository
+    const rows = await musicRepository
         .createQueryBuilder("music")
         .leftJoinAndSelect("music.artist", "artist")
         .where("music.title ILIKE :q", { q: `%${q}%` })
         .orderBy("music.title", "ASC")
-        .getManyAndCount();
+        .getMany();
 
     const results = await Promise.all(rows.map(withThumbnailUrl));
 
-    res.json({
-        results,
-        total,
-    });
+    res.json(results);
 });
 
 export { router as searchRouter };

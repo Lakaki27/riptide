@@ -1,54 +1,30 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { apiFetch } from "$lib/api";
-import { m } from "$lib/paraglide/messages";
-import type { Artist, PaginatedResponse } from "$lib/types";
+    import { onMount } from "svelte";
+    import { apiFetch } from "$lib/api";
+    import { m } from "$lib/paraglide/messages";
+    import type { Artist } from "$lib/types";
 
-let artists = $state<Artist[]>([]);
-let query = $state("");
-let page = $state(1);
-let totalPages = $state(1);
-let loading = $state(false);
+    let artists = $state<Artist[]>([]);
+    let query = $state("");
+    let loading = $state(false);
 
-async function loadPage(reset = false) {
-    if (loading) return;
-    if (reset) {
-        artists = [];
-        page = 1;
-        totalPages = 1;
+    async function loadArtists() {
+        loading = true;
+        artists = await apiFetch<Artist[]>("/artists");
+        loading = false;
     }
-    if (page > totalPages) return;
 
-    loading = true;
-    const data = await apiFetch<PaginatedResponse<Artist>>(`/artists?page=${page}&limit=50`);
-    artists = [...artists, ...data.results];
-    totalPages = data.totalPages;
-    page += 1;
-    loading = false;
-}
-
-async function search() {
-    if (!query.trim()) {
-        await loadPage(true);
-        return;
+    async function search() {
+        if (!query.trim()) {
+            await loadArtists();
+            return;
+        }
+        artists = await apiFetch<Artist[]>(
+            `/search?type=artist&q=${encodeURIComponent(query)}`,
+        );
     }
-    const data = await apiFetch<PaginatedResponse<Artist>>(
-        `/search?type=artist&q=${encodeURIComponent(query)}`,
-    );
-    artists = data.results;
-    totalPages = 1;
-    page = 2;
-}
 
-function onScroll(e: Event) {
-    if (query.trim()) return;
-    const el = e.target as HTMLElement;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
-        loadPage();
-    }
-}
-
-onMount(() => loadPage());
+    onMount(() => loadArtists());
 </script>
 
 <div class="flex h-full flex-col gap-4">
@@ -61,7 +37,7 @@ onMount(() => loadPage());
         class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
     />
 
-    <div class="flex-1 overflow-y-auto" onscroll={onScroll}>
+    <div class="flex-1 overflow-y-auto">
         <div
             class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4"
         >
@@ -77,8 +53,9 @@ onMount(() => loadPage());
                     </div>
                     <span
                         class="w-full truncate text-center text-sm text-(--color-text-primary)"
-                        >{artist.name}</span
                     >
+                        {artist.name}
+                    </span>
                 </a>
             {/each}
         </div>

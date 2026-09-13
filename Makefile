@@ -59,4 +59,4 @@ push-images: build-images
 	docker push $(FRONTEND_IMAGE):latest
 
 deploy: push-images
-	cd $(NIXOS_FLAKE_DIR) && nix run .#deploy-rs -- .#maelstrom
+	cd $(NIXOS_FLAKE_DIR) && make deploy

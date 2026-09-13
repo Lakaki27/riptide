@@ -1,195 +1,209 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { goto } from "$app/navigation";
-import { apiFetch } from "$lib/api";
-import { m } from "$lib/paraglide/messages";
-import { setLocale } from "$lib/paraglide/runtime";
-import { authStore } from "$lib/stores/auth";
-import { consumeStore } from "$lib/stores/consume";
-import { resyncStore } from "$lib/stores/resync";
-import { themeStore } from "$lib/stores/theme";
-import { toastStore } from "$lib/stores/toast";
-import type { Music, PaginatedResponse } from "$lib/types";
+    import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
+    import { apiFetch } from "$lib/api";
+    import { m } from "$lib/paraglide/messages";
+    import { setLocale } from "$lib/paraglide/runtime";
+    import { authStore } from "$lib/stores/auth";
+    import { consumeStore } from "$lib/stores/consume";
+    import { resyncStore } from "$lib/stores/resync";
+    import { themeStore } from "$lib/stores/theme";
+    import { toastStore } from "$lib/stores/toast";
+    import type { Music, PaginatedResponse } from "$lib/types";
 
-interface Me {
-    id: string;
-    email: string;
-    role: "admin" | "user";
-    theme: string;
-    language: string;
-}
-
-interface AdminUser {
-    id: string;
-    email: string;
-    role: "admin" | "user";
-    mustResetPassword: boolean;
-    createdAt: string;
-}
-
-const isAdmin = $derived($authStore.role === "admin");
-
-let me = $state<Me | null>(null);
-let selectedTheme = $state<"light" | "dark" | "system">("system");
-let selectedLanguage = $state("en");
-
-let currentPassword = $state("");
-let newPassword = $state("");
-let confirmPassword = $state("");
-let passwordError = $state("");
-let minPasswordLength = $state(0);
-
-let users = $state<AdminUser[]>([]);
-let showCreateUserModal = $state(false);
-let newUserEmail = $state("");
-let newUserRole = $state<"admin" | "user">("user");
-let credentialModal = $state<{ email: string; password: string } | null>(null);
-
-let confirmDeleteUser = $state<AdminUser | null>(null);
-let confirmResetUser = $state<AdminUser | null>(null);
-
-let showDeleteSongModal = $state(false);
-let songQuery = $state("");
-let songResults = $state<Music[]>([]);
-let confirmDeleteSong = $state<Music | null>(null);
-
-async function loadMe() {
-    me = await apiFetch<Me>("/auth/me");
-    selectedTheme = (me.theme as "light" | "dark" | "system") ?? "system";
-    selectedLanguage = me.language;
-}
-
-async function saveTheme() {
-    themeStore.set(selectedTheme);
-    await apiFetch("/auth/me", {
-        method: "PATCH",
-        body: JSON.stringify({ theme: selectedTheme }),
-    });
-    toastStore.show(m["theme_updated"]());
-}
-
-async function saveLanguage() {
-    await apiFetch("/auth/me", {
-        method: "PATCH",
-        body: JSON.stringify({ language: selectedLanguage }),
-    });
-    setLocale(selectedLanguage as "en" | "fr");
-    toastStore.show(m["language_updated"]());
-}
-
-async function handleChangePassword(e: Event) {
-    e.preventDefault();
-    passwordError = "";
-
-    if (minPasswordLength > 0 && newPassword.length < minPasswordLength) {
-        passwordError = m["password_length_requirement"]({
-            length: minPasswordLength,
-        });
-        return;
-    }
-    if (newPassword !== confirmPassword) {
-        passwordError = m["passwords_do_not_match"]();
-        return;
+    interface Me {
+        id: string;
+        email: string;
+        role: "admin" | "user";
+        theme: string;
+        language: string;
     }
 
-    try {
-        await apiFetch("/auth/change-password", {
-            method: "POST",
-            body: JSON.stringify({ currentPassword, newPassword }),
-        });
-        currentPassword = "";
-        newPassword = "";
-        confirmPassword = "";
-        toastStore.show(m["password_changed"]());
-    } catch (err) {
-        passwordError = err instanceof Error ? err.message : m["password_changed_fail"]();
+    interface AdminUser {
+        id: string;
+        email: string;
+        role: "admin" | "user";
+        mustResetPassword: boolean;
+        createdAt: string;
     }
-}
 
-async function loadUsers() {
-    if (!isAdmin) return;
-    const data = await apiFetch<{ results: AdminUser[] }>("/auth/users");
-    users = data.results;
-}
+    const isAdmin = $derived($authStore.role === "admin");
 
-async function handleCreateUser(e: Event) {
-    e.preventDefault();
-    const result = await apiFetch<{ email: string; password: string }>("/auth/users", {
-        method: "POST",
-        body: JSON.stringify({
-            email: newUserEmail,
-            role: newUserRole,
-        }),
-    });
-    credentialModal = { email: result.email, password: result.password };
-    newUserEmail = "";
-    newUserRole = "user";
-    showCreateUserModal = false;
-    await loadUsers();
-}
+    let me = $state<Me | null>(null);
+    let selectedTheme = $state<"light" | "dark" | "system">("system");
+    let selectedLanguage = $state("en");
 
-async function confirmedResetUser() {
-    if (!confirmResetUser) return;
-    try {
-        const result = await apiFetch<{ password: string }>(
-            `/auth/users/${confirmResetUser.id}/reset-password`,
-            { method: "POST" },
-        );
-        credentialModal = {
-            email: confirmResetUser.email,
-            password: result.password,
-        };
-        await loadUsers();
-    } catch (err) {
-        toastStore.show(err instanceof Error ? err.message : m["couldnt_reset_password"]());
-    }
-    confirmResetUser = null;
-}
+    let currentPassword = $state("");
+    let newPassword = $state("");
+    let confirmPassword = $state("");
+    let passwordError = $state("");
+    let minPasswordLength = $state(0);
 
-async function confirmedDeleteUser() {
-    if (!confirmDeleteUser) return;
-    try {
-        await apiFetch(`/auth/users/${confirmDeleteUser.id}`, {
-            method: "DELETE",
-        });
-        toastStore.show(m["user_deleted"]());
-        await loadUsers();
-    } catch (err) {
-        toastStore.show(err instanceof Error ? err.message : m["user_deleted_fail"]());
-    }
-    confirmDeleteUser = null;
-}
-
-async function searchSongsToDelete() {
-    if (!songQuery.trim()) {
-        songResults = [];
-        return;
-    }
-    const data = await apiFetch<PaginatedResponse<Music>>(
-        `/search?type=music&q=${encodeURIComponent(songQuery)}`,
+    let users = $state<AdminUser[]>([]);
+    let showCreateUserModal = $state(false);
+    let newUserEmail = $state("");
+    let newUserRole = $state<"admin" | "user">("user");
+    let credentialModal = $state<{ email: string; password: string } | null>(
+        null,
     );
-    songResults = data.results;
-}
 
-async function handleDeleteSong() {
-    if (!confirmDeleteSong) return;
-    await apiFetch(`/musics/${confirmDeleteSong.id}`, { method: "DELETE" });
-    toastStore.show(m["song_deleted"]());
-    songResults = songResults.filter((m) => m.id !== confirmDeleteSong!.id);
-    confirmDeleteSong = null;
-}
+    let confirmDeleteUser = $state<AdminUser | null>(null);
+    let confirmResetUser = $state<AdminUser | null>(null);
 
-function handleLogout() {
-    authStore.clear();
-    goto("/auth");
-}
+    let showDeleteSongModal = $state(false);
+    let songQuery = $state("");
+    let songResults = $state<Music[]>([]);
+    let confirmDeleteSong = $state<Music | null>(null);
 
-onMount(async () => {
-    const policy = await apiFetch<{ minLength: number }>("/auth/password-policy");
-    minPasswordLength = policy.minLength;
-    await loadMe();
-    await loadUsers();
-});
+    async function loadMe() {
+        me = await apiFetch<Me>("/auth/me");
+        selectedTheme = (me.theme as "light" | "dark" | "system") ?? "system";
+        selectedLanguage = me.language;
+    }
+
+    async function saveTheme() {
+        themeStore.set(selectedTheme);
+        await apiFetch("/auth/me", {
+            method: "PATCH",
+            body: JSON.stringify({ theme: selectedTheme }),
+        });
+        toastStore.show(m["theme_updated"]());
+    }
+
+    async function saveLanguage() {
+        await apiFetch("/auth/me", {
+            method: "PATCH",
+            body: JSON.stringify({ language: selectedLanguage }),
+        });
+        setLocale(selectedLanguage as "en" | "fr");
+        toastStore.show(m["language_updated"]());
+    }
+
+    async function handleChangePassword(e: Event) {
+        e.preventDefault();
+        passwordError = "";
+
+        if (minPasswordLength > 0 && newPassword.length < minPasswordLength) {
+            passwordError = m["password_length_requirement"]({
+                length: minPasswordLength,
+            });
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            passwordError = m["passwords_do_not_match"]();
+            return;
+        }
+
+        try {
+            await apiFetch("/auth/change-password", {
+                method: "POST",
+                body: JSON.stringify({ currentPassword, newPassword }),
+            });
+            currentPassword = "";
+            newPassword = "";
+            confirmPassword = "";
+            toastStore.show(m["password_changed"]());
+        } catch (err) {
+            passwordError =
+                err instanceof Error
+                    ? err.message
+                    : m["password_changed_fail"]();
+        }
+    }
+
+    async function loadUsers() {
+        if (!isAdmin) return;
+        users = await apiFetch<AdminUser[]>("/auth/users");
+    }
+
+    async function handleCreateUser(e: Event) {
+        e.preventDefault();
+        const result = await apiFetch<{ email: string; password: string }>(
+            "/auth/users",
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    email: newUserEmail,
+                    role: newUserRole,
+                }),
+            },
+        );
+        credentialModal = { email: result.email, password: result.password };
+        newUserEmail = "";
+        newUserRole = "user";
+        showCreateUserModal = false;
+        await loadUsers();
+    }
+
+    async function confirmedResetUser() {
+        if (!confirmResetUser) return;
+        try {
+            const result = await apiFetch<{ password: string }>(
+                `/auth/users/${confirmResetUser.id}/reset-password`,
+                { method: "POST" },
+            );
+            credentialModal = {
+                email: confirmResetUser.email,
+                password: result.password,
+            };
+            await loadUsers();
+        } catch (err) {
+            toastStore.show(
+                err instanceof Error
+                    ? err.message
+                    : m["couldnt_reset_password"](),
+            );
+        }
+        confirmResetUser = null;
+    }
+
+    async function confirmedDeleteUser() {
+        if (!confirmDeleteUser) return;
+        try {
+            await apiFetch(`/auth/users/${confirmDeleteUser.id}`, {
+                method: "DELETE",
+            });
+            toastStore.show(m["user_deleted"]());
+            await loadUsers();
+        } catch (err) {
+            toastStore.show(
+                err instanceof Error ? err.message : m["user_deleted_fail"](),
+            );
+        }
+        confirmDeleteUser = null;
+    }
+
+    async function searchSongsToDelete() {
+        if (!songQuery.trim()) {
+            songResults = [];
+            return;
+        }
+        songResults = await apiFetch<Music[]>(
+            `/search?type=music&q=${encodeURIComponent(songQuery)}`,
+        );
+    }
+
+    async function handleDeleteSong() {
+        if (!confirmDeleteSong) return;
+        await apiFetch(`/musics/${confirmDeleteSong.id}`, { method: "DELETE" });
+        toastStore.show(m["song_deleted"]());
+        songResults = songResults.filter((m) => m.id !== confirmDeleteSong!.id);
+        confirmDeleteSong = null;
+    }
+
+    function handleLogout() {
+        authStore.clear();
+        goto("/auth");
+    }
+
+    onMount(async () => {
+        const policy = await apiFetch<{ minLength: number }>(
+            "/auth/password-policy",
+        );
+        minPasswordLength = policy.minLength;
+        await loadMe();
+        await loadUsers();
+    });
 </script>
 
 <div class="flex flex-col gap-8">

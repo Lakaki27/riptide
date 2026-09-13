@@ -8,30 +8,13 @@ const artistRepository = AppDataSource.getRepository(Artist);
 const musicRepository = AppDataSource.getRepository(Music);
 const router = Router();
 
-router.get("/", async (req, res) => {
-    const page = req.query.page ? Number(req.query.page) : 1;
-    const limit = req.query.limit ? Number(req.query.limit) : 50;
-
-    if (page < 1 || limit < 1 || limit > 200) {
-        return res.status(400).json({ error: "invalid page or limit" });
-    }
-
-    const skip = (page - 1) * limit;
-
-    const [results, total] = await artistRepository
+router.get("/", async (_req, res) => {
+    const results = await artistRepository
         .createQueryBuilder("artist")
         .orderBy("artist.name", "ASC")
-        .skip(skip)
-        .take(limit)
-        .getManyAndCount();
+        .getMany();
 
-    res.json({
-        results,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-    });
+    res.json(results);
 });
 
 router.get("/:id", async (req, res) => {
