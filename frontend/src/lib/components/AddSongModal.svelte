@@ -1,136 +1,195 @@
 <script lang="ts">
-import { apiFetch } from "$lib/api";
-import { m } from "$lib/paraglide/messages";
-import { downloadsStore } from "$lib/stores/downloads";
+    import { apiFetch } from "$lib/api";
+    import { m } from "$lib/paraglide/messages";
+    import { downloadsStore } from "$lib/stores/downloads";
 
-interface Props {
-    onClose: () => void;
-}
-
-let { onClose }: Props = $props();
-
-let mode = $state<"url" | "file">("url");
-let url = $state("");
-let step = $state<"input" | "loading" | "review">("input");
-let previewTitle = $state("");
-let previewArtist = $state("");
-let previewThumbnail = $state<string | null>(null);
-let error = $state("");
-
-let selectedFiles = $state<File[]>([]);
-let uploading = $state(false);
-let isDragging = $state(false);
-let fileInputEl: HTMLInputElement;
-
-async function handleUrlSubmit(e: Event) {
-    e.preventDefault();
-    if (!url.trim()) return;
-
-    step = "loading";
-    error = "";
-
-    try {
-        const preview = await apiFetch<{
-            title: string;
-            artist: string;
-            thumbnailUrl: string | null;
-        }>("/downloads/preview", {
-            method: "POST",
-            body: JSON.stringify({ url }),
-        });
-        previewTitle = preview.title;
-        previewArtist = preview.artist;
-        previewThumbnail = preview.thumbnailUrl;
-        step = "review";
-    } catch {
-        error = m["couldnt_fetch_video"]();
-        step = "input";
-    }
-}
-
-async function handleConfirmUrl() {
-    try {
-        await downloadsStore.start(url, {
-            title: previewTitle,
-            artist: previewArtist,
-        });
-        onClose();
-    } catch {
-        error = m["couldnt_start_download"]();
-    }
-}
-
-function addFiles(fileList: FileList | File[]) {
-    const incoming = Array.from(fileList).filter((f) => f.type.startsWith("audio/"));
-    const existingKeys = new Set(selectedFiles.map((f) => `${f.name}-${f.size}`));
-    const deduped = incoming.filter((f) => !existingKeys.has(`${f.name}-${f.size}`));
-    selectedFiles = [...selectedFiles, ...deduped];
-}
-
-function removeFile(index: number) {
-    selectedFiles = selectedFiles.filter((_, i) => i !== index);
-}
-
-function formatSize(bytes: number): string {
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function onDragOver(e: DragEvent) {
-    e.preventDefault();
-    isDragging = true;
-}
-
-function onDragLeave(e: DragEvent) {
-    e.preventDefault();
-    isDragging = false;
-}
-
-function onDrop(e: DragEvent) {
-    e.preventDefault();
-    isDragging = false;
-    if (e.dataTransfer?.files) {
-        addFiles(e.dataTransfer.files);
-    }
-}
-
-function onFileInputChange(e: Event) {
-    const target = e.currentTarget as HTMLInputElement;
-    if (target.files) {
-        addFiles(target.files);
-    }
-    target.value = "";
-}
-
-async function handleFileUpload() {
-    if (selectedFiles.length === 0) return;
-
-    uploading = true;
-    error = "";
-
-    const formData = new FormData();
-    for (const file of selectedFiles) {
-        formData.append("files", file);
+    interface Props {
+        onClose: () => void;
     }
 
-    try {
-        const { jobIds } = await apiFetch<{ jobIds: string[] }>("/uploads", {
-            method: "POST",
-            body: formData,
-            skipJsonContentType: true,
-        });
+    let { onClose }: Props = $props();
 
-        jobIds.forEach((jobId, i) => {
-            downloadsStore.trackExisting(jobId, selectedFiles[i].name);
-        });
-        selectedFiles = [];
-        onClose();
-    } catch {
-        error = m["upload_failed"]();
-    } finally {
-        uploading = false;
+    let mode = $state<"url" | "file">("url");
+    let url = $state("");
+    let step = $state<"input" | "loading" | "review">("input");
+    let previewTitle = $state("");
+    let previewArtist = $state("");
+    let previewThumbnail = $state<string | null>(null);
+    let error = $state("");
+
+    let selectedFiles = $state<File[]>([]);
+    let uploading = $state(false);
+    let isDragging = $state(false);
+    let fileInputEl: HTMLInputElement;
+
+    const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024;
+    const ALLOWED_AUDIO_EXTENSIONS = [
+        "mp3",
+        "wav",
+        "flac",
+        "m4a",
+        "aac",
+        "ogg",
+        "opus",
+        "wma",
+        "alac",
+    ];
+
+    function getExtension(filename: string): string {
+        const parts = filename.split(".");
+        return parts.length > 1 ? parts.pop()!.toLowerCase() : "";
     }
-}
+
+    function isAudioFile(file: File): boolean {
+        if (file.type.startsWith("audio/")) return true;
+        // Fall back to extension check since some browsers/OSes report an
+        // empty or incorrect MIME type for audio files (e.g. .flac, .opus).
+        return ALLOWED_AUDIO_EXTENSIONS.includes(getExtension(file.name));
+    }
+
+    async function handleUrlSubmit(e: Event) {
+        e.preventDefault();
+        if (!url.trim()) return;
+
+        step = "loading";
+        error = "";
+
+        try {
+            const preview = await apiFetch<{
+                title: string;
+                artist: string;
+                thumbnailUrl: string | null;
+            }>("/downloads/preview", {
+                method: "POST",
+                body: JSON.stringify({ url }),
+            });
+            previewTitle = preview.title;
+            previewArtist = preview.artist;
+            previewThumbnail = preview.thumbnailUrl;
+            step = "review";
+        } catch {
+            error = m["couldnt_fetch_video"]();
+            step = "input";
+        }
+    }
+
+    async function handleConfirmUrl() {
+        try {
+            await downloadsStore.start(url, {
+                title: previewTitle,
+                artist: previewArtist,
+            });
+            onClose();
+        } catch {
+            error = m["couldnt_start_download"]();
+        }
+    }
+
+    function addFiles(fileList: FileList | File[]) {
+        error = "";
+
+        const incoming = Array.from(fileList);
+        const existingKeys = new Set(
+            selectedFiles.map((f) => `${f.name}-${f.size}`),
+        );
+
+        const accepted: File[] = [];
+        let rejectedType = 0;
+        let rejectedSize = 0;
+
+        for (const file of incoming) {
+            const key = `${file.name}-${file.size}`;
+            if (existingKeys.has(key)) continue;
+
+            if (!isAudioFile(file)) {
+                rejectedType++;
+                continue;
+            }
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                rejectedSize++;
+                continue;
+            }
+
+            existingKeys.add(key);
+            accepted.push(file);
+        }
+
+        if (rejectedType > 0 || rejectedSize > 0) {
+            error = m["some_files_rejected"]({
+                maxSizeMb: Math.round(MAX_FILE_SIZE_BYTES / (1024 * 1024)),
+            });
+        }
+
+        selectedFiles = [...selectedFiles, ...accepted];
+    }
+
+    function removeFile(index: number) {
+        selectedFiles = selectedFiles.filter((_, i) => i !== index);
+    }
+
+    function formatSize(bytes: number): string {
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function onDragOver(e: DragEvent) {
+        e.preventDefault();
+        isDragging = true;
+    }
+
+    function onDragLeave(e: DragEvent) {
+        e.preventDefault();
+        isDragging = false;
+    }
+
+    function onDrop(e: DragEvent) {
+        e.preventDefault();
+        isDragging = false;
+        if (e.dataTransfer?.files) {
+            addFiles(e.dataTransfer.files);
+        }
+    }
+
+    function onFileInputChange(e: Event) {
+        const target = e.currentTarget as HTMLInputElement;
+        if (target.files) {
+            addFiles(target.files);
+        }
+        target.value = "";
+    }
+
+    async function handleFileUpload() {
+        if (selectedFiles.length === 0) return;
+
+        uploading = true;
+        error = "";
+
+        const formData = new FormData();
+        for (const file of selectedFiles) {
+            formData.append("files", file);
+        }
+
+        try {
+            const { jobIds } = await apiFetch<{ jobIds: string[] }>(
+                "/uploads",
+                {
+                    method: "POST",
+                    body: formData,
+                    skipJsonContentType: true,
+                },
+            );
+
+            jobIds.forEach((jobId, i) => {
+                downloadsStore.trackExisting(jobId, selectedFiles[i].name);
+            });
+            selectedFiles = [];
+            onClose();
+        } catch {
+            error = m["upload_failed"]();
+        } finally {
+            uploading = false;
+        }
+    }
 </script>
 
 <div class="fixed inset-0 flex items-center justify-center bg-black/20">
@@ -279,7 +338,7 @@ async function handleFileUpload() {
                 <input
                     bind:this={fileInputEl}
                     type="file"
-                    accept="audio/*"
+                    accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.wma,.alac"
                     multiple
                     onchange={onFileInputChange}
                     class="hidden"

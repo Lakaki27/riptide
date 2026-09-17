@@ -1,47 +1,57 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-import MusicList from "$lib/components/MusicList.svelte";
-import { m } from "$lib/paraglide/messages";
-import { playerStore } from "$lib/stores/player";
-import { mobileQueueOpen } from "$lib/stores/ui";
-import type { Music } from "$lib/types";
+    import { goto } from "$app/navigation";
+    import MusicList from "$lib/components/MusicList.svelte";
+    import { m } from "$lib/paraglide/messages";
+    import { playerStore } from "$lib/stores/player";
+    import { mobileQueueOpen } from "$lib/stores/ui";
+    import type { Music } from "$lib/types";
 
-let searchQuery = $state("");
-let scrollContainer: HTMLElement;
+    const MAX_QUERY_LENGTH = 100;
 
-const indexedQueue = $derived($playerStore.queue.map((music, index) => ({ music, index })));
+    let searchQuery = $state("");
+    let scrollContainer: HTMLElement;
 
-const filteredIndexed = $derived(
-    searchQuery.trim()
-        ? indexedQueue.filter(
-              ({ music }) =>
-                  music.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  music.artist.name.toLowerCase().includes(searchQuery.toLowerCase()),
-          )
-        : indexedQueue,
-);
+    const indexedQueue = $derived(
+        $playerStore.queue.map((music, index) => ({ music, index })),
+    );
 
-const filteredMusics = $derived(filteredIndexed.map((x) => x.music));
+    const filteredIndexed = $derived(
+        searchQuery.trim()
+            ? indexedQueue.filter(
+                  ({ music }) =>
+                      music.title
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                      music.artist.name
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()),
+              )
+            : indexedQueue,
+    );
 
-function handlePlay(filteredIndex: number) {
-    const realIndex = filteredIndexed[filteredIndex]?.index;
-    if (realIndex !== undefined) playerStore.jumpTo(realIndex);
-}
+    const filteredMusics = $derived(filteredIndexed.map((x) => x.music));
 
-function handleTitleNavigate(music: Music) {
-    $mobileQueueOpen = false;
-    goto(`/artists/${music.artist.id}`);
-}
+    function handlePlay(filteredIndex: number) {
+        const realIndex = filteredIndexed[filteredIndex]?.index;
+        if (realIndex !== undefined) playerStore.jumpTo(realIndex);
+    }
 
-$effect(() => {
-    const current = $playerStore.currentIndex;
-    if (!scrollContainer) return;
-    const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
-    if (!isScrollable) return;
-    const rowHeight = 48;
-    const targetTop = filteredIndexed.findIndex((x) => x.index === current) * rowHeight;
-    scrollContainer.scrollTo({ top: targetTop, behavior: "smooth" });
-});
+    function handleTitleNavigate(music: Music) {
+        $mobileQueueOpen = false;
+        goto(`/artists/${music.artist.id}`);
+    }
+
+    $effect(() => {
+        const current = $playerStore.currentIndex;
+        if (!scrollContainer) return;
+        const isScrollable =
+            scrollContainer.scrollHeight > scrollContainer.clientHeight;
+        if (!isScrollable) return;
+        const rowHeight = 48;
+        const targetTop =
+            filteredIndexed.findIndex((x) => x.index === current) * rowHeight;
+        scrollContainer.scrollTo({ top: targetTop, behavior: "smooth" });
+    });
 </script>
 
 {#if $mobileQueueOpen}
@@ -60,11 +70,17 @@ $effect(() => {
                     <i class="bx bx-x text-2xl"></i>
                 </button>
             </div>
-            <input
-                bind:value={searchQuery}
-                placeholder={m["search_queue"]()}
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    bind:value={searchQuery}
+                    placeholder={m["search_queue"]()}
+                    maxlength={MAX_QUERY_LENGTH}
+                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {searchQuery.length}/{MAX_QUERY_LENGTH}
+                </span>
+            </div>
             <div class="flex-1 overflow-y-auto">
                 <MusicList
                     musics={filteredMusics}
@@ -87,11 +103,17 @@ $effect(() => {
     <h2 class="text-sm font-medium text-(--color-text-primary)">
         {m["playing_next"]()}
     </h2>
-    <input
-        bind:value={searchQuery}
-        placeholder={m["search_queue"]()}
-        class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
-    />
+    <div class="flex flex-col gap-0.5">
+        <input
+            bind:value={searchQuery}
+            placeholder={m["search_queue"]()}
+            maxlength={MAX_QUERY_LENGTH}
+            class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
+        />
+        <span class="self-end text-xs text-(--color-text-muted)">
+            {searchQuery.length}/{MAX_QUERY_LENGTH}
+        </span>
+    </div>
     <div bind:this={scrollContainer} class="flex-1 overflow-y-auto">
         <MusicList
             musics={filteredMusics}

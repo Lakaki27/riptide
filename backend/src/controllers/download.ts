@@ -1,7 +1,17 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/auth";
-import { isValidDownloadUrl, previewDownload, startDownloadJob } from "../services/download";
+import {
+    isValidDownloadUrl,
+    previewDownload,
+    startDownloadJob,
+} from "../services/download";
 import { getJobStatus } from "../services/job";
+import {
+    MAX_ARTIST_NAME_LENGTH,
+    MAX_TITLE_LENGTH,
+    MAX_URL_LENGTH,
+    tooLongError,
+} from "../utils/validation";
 
 const router = Router();
 
@@ -10,6 +20,26 @@ router.post("/", requireAdmin, (req, res) => {
     if (!url || typeof url !== "string" || !isValidDownloadUrl(url)) {
         return res.status(400).json({ error: "a valid url is required" });
     }
+
+    const urlTooLong = tooLongError(url, MAX_URL_LENGTH, "url");
+    if (urlTooLong) {
+        return res.status(400).json({ error: urlTooLong });
+    }
+
+    const titleTooLong = tooLongError(title, MAX_TITLE_LENGTH, "title");
+    if (titleTooLong) {
+        return res.status(400).json({ error: titleTooLong });
+    }
+
+    const artistTooLong = tooLongError(
+        artist,
+        MAX_ARTIST_NAME_LENGTH,
+        "artist",
+    );
+    if (artistTooLong) {
+        return res.status(400).json({ error: artistTooLong });
+    }
+
     const jobId = startDownloadJob(url, { title, artist });
     res.status(202).json({ jobId });
 });
@@ -32,6 +62,12 @@ router.post("/preview", async (req, res) => {
     if (!url || typeof url !== "string" || !isValidDownloadUrl(url)) {
         return res.status(400).json({ error: "a valid url is required" });
     }
+
+    const urlTooLong = tooLongError(url, MAX_URL_LENGTH, "url");
+    if (urlTooLong) {
+        return res.status(400).json({ error: urlTooLong });
+    }
+
     try {
         const preview = await previewDownload(url);
         res.json(preview);

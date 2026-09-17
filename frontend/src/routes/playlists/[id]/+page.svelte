@@ -7,6 +7,8 @@
     import { playerStore } from "$lib/stores/player";
     import type { Music, Playlist } from "$lib/types";
 
+    const MAX_QUERY_LENGTH = 100;
+
     const playlistId = page.params.id;
 
     let playlist = $state<Playlist | null>(null);
@@ -79,11 +81,17 @@
             </div>
         </div>
 
-        <input
-            bind:value={localQuery}
-            placeholder={m["search_in_this_playlist"]()}
-            class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
-        />
+        <div class="flex flex-col gap-0.5">
+            <input
+                bind:value={localQuery}
+                placeholder={m["search_in_this_playlist"]()}
+                maxlength={MAX_QUERY_LENGTH}
+                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
+            />
+            <span class="self-end text-xs text-(--color-text-muted)">
+                {localQuery.length}/{MAX_QUERY_LENGTH}
+            </span>
+        </div>
 
         <MusicList
             musics={filteredMusics}
@@ -108,12 +116,18 @@
                     class="text-(--color-text-muted)">Close</button
                 >
             </div>
-            <input
-                bind:value={addQuery}
-                oninput={searchToAdd}
-                placeholder={m["search_songs"]()}
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    bind:value={addQuery}
+                    oninput={searchToAdd}
+                    placeholder={m["search_songs"]()}
+                    maxlength={MAX_QUERY_LENGTH}
+                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {addQuery.length}/{MAX_QUERY_LENGTH}
+                </span>
+            </div>
             <div class="flex flex-1 flex-col gap-1 overflow-y-auto">
                 {#each visibleAddResults as music}
                     <button

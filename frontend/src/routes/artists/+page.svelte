@@ -4,6 +4,8 @@
     import { m } from "$lib/paraglide/messages";
     import type { Artist } from "$lib/types";
 
+    const MAX_QUERY_LENGTH = 100;
+
     let artists = $state<Artist[]>([]);
     let query = $state("");
     let loading = $state(false);
@@ -30,12 +32,18 @@
 <div class="flex h-full flex-col gap-4">
     <h1 class="text-xl text-(--color-text-primary)">{m["nav.artists"]()}</h1>
 
-    <input
-        bind:value={query}
-        oninput={search}
-        placeholder={m["search_artists"]()}
-        class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
-    />
+    <div class="flex flex-col gap-0.5">
+        <input
+            bind:value={query}
+            oninput={search}
+            placeholder={m["search_artists"]()}
+            maxlength={MAX_QUERY_LENGTH}
+            class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
+        />
+        <span class="self-end text-xs text-(--color-text-muted)">
+            {query.length}/{MAX_QUERY_LENGTH}
+        </span>
+    </div>
 
     <div class="flex-1 overflow-y-auto">
         <div

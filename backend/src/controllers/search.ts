@@ -3,6 +3,7 @@ import { AppDataSource } from "../data-source";
 import { Artist } from "../entities/Artist";
 import { Music } from "../entities/Music";
 import { withThumbnailUrl } from "../services/media";
+import { MAX_QUERY_LENGTH, tooLongError } from "../utils/validation";
 
 const musicRepository = AppDataSource.getRepository(Music);
 const artistRepository = AppDataSource.getRepository(Artist);
@@ -20,6 +21,11 @@ router.get("/", async (req, res) => {
 
     if (!q) {
         return res.status(400).json({ error: "q is required" });
+    }
+
+    const qTooLong = tooLongError(q, MAX_QUERY_LENGTH, "q");
+    if (qTooLong) {
+        return res.status(400).json({ error: qTooLong });
     }
 
     if (type === "artist") {

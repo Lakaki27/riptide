@@ -5,6 +5,7 @@ import { Playlist } from "../entities/Playlist";
 import { requireAdmin } from "../middleware/auth";
 import { withThumbnailUrl } from "../services/media";
 import { getParamAndAssertString } from "../utils/getParamAndAssertString";
+import { MAX_NAME_LENGTH, tooLongError } from "../utils/validation";
 
 const router = Router();
 const playlistRepository = AppDataSource.getRepository(Playlist);
@@ -15,6 +16,11 @@ router.post("/", requireAdmin, async (req, res) => {
 
     if (!name) {
         return res.status(400).json({ error: "name is required" });
+    }
+
+    const nameTooLong = tooLongError(name, MAX_NAME_LENGTH, "name");
+    if (nameTooLong) {
+        return res.status(400).json({ error: nameTooLong });
     }
 
     const playlist = playlistRepository.create({ name });
@@ -67,6 +73,13 @@ router.patch("/:id", requireAdmin, async (req, res) => {
 
     if (!id) {
         return res.status(400).json({ error: "invalid playlist id" });
+    }
+
+    if (name) {
+        const nameTooLong = tooLongError(name, MAX_NAME_LENGTH, "name");
+        if (nameTooLong) {
+            return res.status(400).json({ error: nameTooLong });
+        }
     }
 
     const playlist = await playlistRepository.findOne({ where: { id } });
@@ -126,10 +139,15 @@ router.post("/:id", requireAdmin, async (req, res) => {
 
     const alreadyIn = playlist.musics.some((m) => m.id === songId);
     if (alreadyIn) {
-        return res.status(409).json({ error: "song is already in this playlist" });
+        return res
+            .status(409)
+            .json({ error: "song is already in this playlist" });
     }
 
-    await AppDataSource.createQueryBuilder().relation(Playlist, "musics").of(id).add(songId);
+    await AppDataSource.createQueryBuilder()
+        .relation(Playlist, "musics")
+        .of(id)
+        .add(songId);
     return res.sendStatus(204);
 });
 
@@ -147,7 +165,10 @@ router.delete("/:id/musics/:musicId", requireAdmin, async (req, res) => {
         return res.status(404).json({ error: "playlist not found" });
     }
 
-    await AppDataSource.createQueryBuilder().relation(Playlist, "musics").of(id).remove(musicId);
+    await AppDataSource.createQueryBuilder()
+        .relation(Playlist, "musics")
+        .of(id)
+        .remove(musicId);
 
     res.sendStatus(204);
 });

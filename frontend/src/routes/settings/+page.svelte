@@ -11,6 +11,10 @@
     import { toastStore } from "$lib/stores/toast";
     import type { Music, PaginatedResponse } from "$lib/types";
 
+    const MAX_PASSWORD_LENGTH = 128;
+    const MAX_EMAIL_LENGTH = 254;
+    const MAX_QUERY_LENGTH = 100;
+
     interface Me {
         id: string;
         email: string;
@@ -280,41 +284,59 @@
             <label class="sr-only" for="current-password">
                 {m["current_password"]()}
             </label>
-            <input
-                id="current-password"
-                type="password"
-                bind:value={currentPassword}
-                placeholder={m["current_password"]()}
-                autocomplete="current-password"
-                required
-                class="rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    id="current-password"
+                    type="password"
+                    bind:value={currentPassword}
+                    placeholder={m["current_password"]()}
+                    autocomplete="current-password"
+                    maxlength={MAX_PASSWORD_LENGTH}
+                    required
+                    class="w-full rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {currentPassword.length}/{MAX_PASSWORD_LENGTH}
+                </span>
+            </div>
 
             <label class="sr-only" for="new-password"
                 >{m["new_password"]()}</label
             >
-            <input
-                id="new-password"
-                type="password"
-                bind:value={newPassword}
-                placeholder={m["new_password"]()}
-                autocomplete="new-password"
-                required
-                class="rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    id="new-password"
+                    type="password"
+                    bind:value={newPassword}
+                    placeholder={m["new_password"]()}
+                    autocomplete="new-password"
+                    maxlength={MAX_PASSWORD_LENGTH}
+                    required
+                    class="w-full rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {newPassword.length}/{MAX_PASSWORD_LENGTH}
+                </span>
+            </div>
 
             <label class="sr-only" for="confirm-password">
                 {m["new_password_confirm"]()}
             </label>
-            <input
-                id="confirm-password"
-                type="password"
-                bind:value={confirmPassword}
-                placeholder={m["new_password_confirm"]()}
-                autocomplete="new-password"
-                required
-                class="rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    id="confirm-password"
+                    type="password"
+                    bind:value={confirmPassword}
+                    placeholder={m["new_password_confirm"]()}
+                    autocomplete="new-password"
+                    maxlength={MAX_PASSWORD_LENGTH}
+                    required
+                    class="w-full rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {confirmPassword.length}/{MAX_PASSWORD_LENGTH}
+                </span>
+            </div>
 
             {#if passwordError}
                 <span
@@ -510,15 +532,21 @@
             </h2>
 
             <label class="sr-only" for="new-user-email"> Email </label>
-            <input
-                id="new-user-email"
-                type="email"
-                bind:value={newUserEmail}
-                placeholder={m["email"]()}
-                autocomplete="email"
-                required
-                class="rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    id="new-user-email"
+                    type="email"
+                    bind:value={newUserEmail}
+                    placeholder={m["email"]()}
+                    autocomplete="email"
+                    maxlength={MAX_EMAIL_LENGTH}
+                    required
+                    class="w-full rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {newUserEmail.length}/{MAX_EMAIL_LENGTH}
+                </span>
+            </div>
 
             <label class="sr-only" for="new-user-role">{m["user_role"]()}</label
             >
@@ -714,14 +742,20 @@
             <label class="sr-only" for="song-search"
                 >{m["search_songs"]()}</label
             >
-            <input
-                id="song-search"
-                bind:value={songQuery}
-                oninput={searchSongsToDelete}
-                placeholder={m["search_songs"]()}
-                type="search"
-                class="cursor-text rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-(--color-accent) focus-visible:ring-offset-2"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    id="song-search"
+                    bind:value={songQuery}
+                    oninput={searchSongsToDelete}
+                    placeholder={m["search_songs"]()}
+                    type="search"
+                    maxlength={MAX_QUERY_LENGTH}
+                    class="w-full cursor-text rounded-lg border border-gray-300 bg-(--color-surface) px-3 py-2 text-sm text-(--color-text-primary) outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-(--color-accent) focus-visible:ring-offset-2"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {songQuery.length}/{MAX_QUERY_LENGTH}
+                </span>
+            </div>
 
             <div class="flex flex-1 flex-col gap-1 overflow-y-auto">
                 {#each songResults as song}

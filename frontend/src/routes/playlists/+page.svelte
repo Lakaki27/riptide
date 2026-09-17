@@ -1,33 +1,35 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { apiFetch } from "$lib/api";
-import { m } from "$lib/paraglide/messages";
-import { authStore } from "$lib/stores/auth";
-import type { Playlist } from "$lib/types";
+    import { onMount } from "svelte";
+    import { apiFetch } from "$lib/api";
+    import { m } from "$lib/paraglide/messages";
+    import { authStore } from "$lib/stores/auth";
+    import type { Playlist } from "$lib/types";
 
-let playlists = $state<Playlist[]>([]);
-let showCreateModal = $state(false);
-let newPlaylistName = $state("");
+    const MAX_NAME_LENGTH = 100;
 
-async function loadPlaylists() {
-    playlists = await apiFetch<Playlist[]>("/playlists");
-}
+    let playlists = $state<Playlist[]>([]);
+    let showCreateModal = $state(false);
+    let newPlaylistName = $state("");
 
-async function createPlaylist(e: Event) {
-    e.preventDefault();
-    if (!newPlaylistName.trim()) return;
+    async function loadPlaylists() {
+        playlists = await apiFetch<Playlist[]>("/playlists");
+    }
 
-    await apiFetch("/playlists", {
-        method: "POST",
-        body: JSON.stringify({ name: newPlaylistName }),
-    });
+    async function createPlaylist(e: Event) {
+        e.preventDefault();
+        if (!newPlaylistName.trim()) return;
 
-    newPlaylistName = "";
-    showCreateModal = false;
-    await loadPlaylists();
-}
+        await apiFetch("/playlists", {
+            method: "POST",
+            body: JSON.stringify({ name: newPlaylistName }),
+        });
 
-onMount(loadPlaylists);
+        newPlaylistName = "";
+        showCreateModal = false;
+        await loadPlaylists();
+    }
+
+    onMount(loadPlaylists);
 </script>
 
 <div class="flex flex-col gap-4">
@@ -73,12 +75,18 @@ onMount(loadPlaylists);
             <h2 class="text-lg text-(--color-text-primary)">
                 {m["new_playlist"]()}
             </h2>
-            <input
-                bind:value={newPlaylistName}
-                placeholder={m["playlist_name"]()}
-                required
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
-            />
+            <div class="flex flex-col gap-0.5">
+                <input
+                    bind:value={newPlaylistName}
+                    placeholder={m["playlist_name"]()}
+                    maxlength={MAX_NAME_LENGTH}
+                    required
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-gray-400"
+                />
+                <span class="self-end text-xs text-(--color-text-muted)">
+                    {newPlaylistName.length}/{MAX_NAME_LENGTH}
+                </span>
+            </div>
             <div class="flex justify-end gap-2">
                 <button
                     type="button"

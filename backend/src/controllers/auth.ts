@@ -16,6 +16,11 @@ import {
     validatePasswordLength,
 } from "../services/auth";
 import { getParamAndAssertString } from "../utils/getParamAndAssertString";
+import {
+    MAX_EMAIL_LENGTH,
+    MAX_PASSWORD_LENGTH,
+    tooLongError,
+} from "../utils/validation";
 
 const router = Router();
 
@@ -34,6 +39,15 @@ router.post("/login", loginLimiter, async (req, res) => {
             .status(400)
             .json({ error: "email and password are required" });
     }
+    // Reject oversized input before it reaches loginUser (which hashes the
+    // password) — a multi-MB "password" would otherwise waste bcrypt cycles
+    // even though it can never match.
+    if (
+        tooLongError(email, MAX_EMAIL_LENGTH, "email") ||
+        tooLongError(password, MAX_PASSWORD_LENGTH, "password")
+    ) {
+        return res.status(401).json({ error: "invalid credentials" });
+    }
     try {
         const result = await loginUser(email, password);
         res.json(result);
@@ -48,6 +62,15 @@ router.post("/complete-reset", async (req, res) => {
         return res
             .status(400)
             .json({ error: "resetToken and newPassword are required" });
+    }
+
+    const maxLengthError = tooLongError(
+        newPassword,
+        MAX_PASSWORD_LENGTH,
+        "newPassword",
+    );
+    if (maxLengthError) {
+        return res.status(400).json({ error: maxLengthError });
     }
 
     const lengthError = validatePasswordLength(newPassword);
@@ -121,6 +144,24 @@ router.post("/change-password", requireAuth, async (req, res) => {
             .json({ error: "currentPassword and newPassword are required" });
     }
 
+    const currentTooLong = tooLongError(
+        currentPassword,
+        MAX_PASSWORD_LENGTH,
+        "currentPassword",
+    );
+    if (currentTooLong) {
+        return res.status(400).json({ error: currentTooLong });
+    }
+
+    const newTooLong = tooLongError(
+        newPassword,
+        MAX_PASSWORD_LENGTH,
+        "newPassword",
+    );
+    if (newTooLong) {
+        return res.status(400).json({ error: newTooLong });
+    }
+
     const lengthError = validatePasswordLength(newPassword);
 
     if (lengthError) {
@@ -162,6 +203,12 @@ router.post("/users", requireAuth, requireAdmin, async (req, res) => {
     if (!email) {
         return res.status(400).json({ error: "email is required" });
     }
+
+    const emailTooLong = tooLongError(email, MAX_EMAIL_LENGTH, "email");
+    if (emailTooLong) {
+        return res.status(400).json({ error: emailTooLong });
+    }
+
     try {
         const { user, password } = await adminCreateUser(
             email,
