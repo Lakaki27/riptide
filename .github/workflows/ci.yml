@@ -19,7 +19,7 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
-                  cache-dependency-path: backend/package-lock.json
+                  cache-dependency-path: package-lock.json
 
             - run: npm ci
             - run: npx biome ci .
@@ -36,7 +36,7 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
-                  cache-dependency-path: frontend/package-lock.json
+                  cache-dependency-path: package-lock.json
 
             - run: npm ci
             - run: npx biome ci .
@@ -52,7 +52,7 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
-                  cache-dependency-path: frontend/package-lock.json
+                  cache-dependency-path: package-lock.json
             - run: npm ci
             - run: npm run check
 
@@ -68,7 +68,7 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
-                  cache-dependency-path: backend/package-lock.json
+                  cache-dependency-path: package-lock.json
 
             - run: npm ci
             - run: npx tsc --noEmit
@@ -113,7 +113,7 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
-                  cache-dependency-path: backend/package-lock.json
+                  cache-dependency-path: package-lock.json
 
             - run: npm ci
 
@@ -153,7 +153,7 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
-                  cache-dependency-path: backend/package-lock.json
+                  cache-dependency-path: package-lock.json
 
             - run: npm ci
 
